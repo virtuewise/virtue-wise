@@ -28,9 +28,7 @@ def _connect() -> sqlite3.Connection:
 def load_model() -> ProjectModel:
     """Load the saved model or return an empty model on first run."""
     with _connect() as connection:
-        row = connection.execute(
-            "SELECT payload FROM project_model WHERE singleton = 1"
-        ).fetchone()
+        row = connection.execute("SELECT payload FROM project_model WHERE singleton = 1").fetchone()
     if row is None:
         return ProjectModel()
     return ProjectModel.model_validate_json(row[0])
