@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#172b3a">
+    <meta name="description" content="A local-first workspace for inspectable project models.">
+    <title>VIRTUE WISE — Project model</title>
+    <link rel="icon" href="/static/mark.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/static/styles.css">
+    <script src="/static/app.js" defer></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="VIRTUE WISE home">
+        <img src="/static/mark.svg" alt="" width="34" height="34">
+        <span>VIRTUE <strong>WISE</strong></span>
+      </a>
+      <span class="local-badge"><span aria-hidden="true"></span> Local prototype</span>
+    </header>
+    <main class="shell">
+      <section class="intro">
+        <p class="eyebrow">Make thinking inspectable</p>
+        <h1>Give your project a clearer model.</h1>
+        <p class="lede">Capture what you know, keep its source visible, and review possible relationships without confusing hypotheses with facts.</p>
+      </section>
+      <p id="notice" class="notice" role="status" aria-live="polite">Loading your local model…</p>
+      <section class="panel" aria-labelledby="project-heading">
+        <div class="section-heading"><div><p class="eyebrow">01 / Orientation</p><h2 id="project-heading">Your project</h2></div><span class="step-mark">01</span></div>
+        <form id="project-form" class="stack">
+          <label for="project-title">Project name</label>
+          <input id="project-title" name="title" maxlength="200" required value="Untitled project">
+          <label for="project-goal">Goal or question</label>
+          <textarea id="project-goal" name="goal" rows="3" maxlength="2000" placeholder="What are you trying to understand or achieve?"></textarea>
+          <div><button type="submit" class="button button-primary">Save project</button></div>
+        </form>
+      </section>
+      <div class="columns">
+        <section class="panel" aria-labelledby="statements-heading">
+          <div class="section-heading"><div><p class="eyebrow">02 / Inputs</p><h2 id="statements-heading">Statements &amp; sources</h2></div><span class="count" id="statement-count">0</span></div>
+          <p class="section-copy">Record one fact, observation, or user-provided note at a time. These remain distinct from hypotheses.</p>
+          <form id="statement-form" class="stack">
+            <label for="statement-text">Statement</label>
+            <textarea id="statement-text" required maxlength="2000" rows="3" placeholder="What do you know or observe?"></textarea>
+            <label for="source-label">Source label</label>
+            <input id="source-label" maxlength="300" value="User provided" required>
+            <label for="source-excerpt">Optional source excerpt</label>
+            <textarea id="source-excerpt" maxlength="2000" rows="2" placeholder="A short excerpt or context (optional)"></textarea>
+            <button class="button button-secondary" type="submit">Add statement</button>
+          </form>
+          <ul id="statement-list" class="item-list"></ul>
+        </section>
+        <section class="panel" aria-labelledby="hypotheses-heading">
+          <div class="section-heading"><div><p class="eyebrow">03 / Interpretation</p><h2 id="hypotheses-heading">Hypotheses</h2></div><span class="count" id="hypothesis-count">0</span></div>
+          <p class="section-copy">A hypothesis is a proposition to review, not a verified fact. Link it to supporting statements where possible.</p>
+          <form id="hypothesis-form" class="stack">
+            <label for="hypothesis-claim">Possible relationship or explanation</label>
+            <textarea id="hypothesis-claim" required maxlength="2000" rows="3" placeholder="What might connect these observations?"></textarea>
+            <label for="hypothesis-rationale">Why might this be true?</label>
+            <textarea id="hypothesis-rationale" maxlength="2000" rows="2" placeholder="Reasoning and limitations"></textarea>
+            <label for="hypothesis-evidence">Evidence statements</label>
+            <select id="hypothesis-evidence" multiple size="3" aria-describedby="evidence-help"></select>
+            <p id="evidence-help" class="field-help">Use Ctrl (Windows/Linux) or Command (Mac) to select multiple items.</p>
+            <label for="hypothesis-uncertainty">Uncertainty</label>
+            <select id="hypothesis-uncertainty"><option value="unknown">Unknown</option><option value="tentative">Tentative</option><option value="supported">Supported (reason documented)</option></select>
+            <button class="button button-secondary" type="submit">Add hypothesis</button>
+          </form>
+          <ul id="hypothesis-list" class="item-list"></ul>
+        </section>
+      </div>
+      <section class="panel export-panel" aria-labelledby="data-heading">
+        <div><p class="eyebrow">04 / Ownership</p><h2 id="data-heading">Your data stays yours</h2><p class="section-copy">The prototype stores one model in a local SQLite database. Export a portable JSON copy or delete the saved model. Do not enter sensitive personal data.</p></div>
+        <div class="actions"><a class="button button-secondary" href="/api/export">Export JSON</a><button id="delete-model" class="button button-danger" type="button">Delete local model</button></div>
+      </section>
+      <footer><p>VIRTUE WISE is an experimental decision-support prototype, not a source of professional advice or reliable predictions.</p><a href="https://github.com/virtuewise/virtue-wise">Repository &amp; documentation</a></footer>
+    </main>
+  </body>
+</html>

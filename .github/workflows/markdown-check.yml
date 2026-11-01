@@ -3,7 +3,8 @@ name: Documentation checks
 on:
   pull_request:
   push:
-    branches: [main, master]
+    branches: [main, master, "feat/**"]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -19,15 +20,15 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Verify core documentation and links to planned docs
+      - name: Verify core documentation and application scaffold
         shell: bash
         run: |
           set -euo pipefail
-          for file in README.md LICENSE CONTRIBUTING.md CODE_OF_CONDUCT.md SECURITY.md ROADMAP.md REPOSITORY_SETUP.md docs/VISION.md docs/PROTOTYPE.md docs/BRAND.md assets/virtue-wise-mark.svg; do
+          for file in README.md LICENSE CONTRIBUTING.md CODE_OF_CONDUCT.md SECURITY.md ROADMAP.md REPOSITORY_SETUP.md docs/VISION.md docs/PROTOTYPE.md docs/BRAND.md docs/ARCHITECTURE.md assets/virtue-wise-mark.svg pyproject.toml app/main.py app/models.py app/store.py app/static/index.html app/static/app.js app/static/styles.css tests/test_app.py; do
             test -s "$file" || { echo "Missing or empty required file: $file"; exit 1; }
           done
           grep -q 'docs/PROTOTYPE.md' README.md
-          grep -q 'docs/BRAND.md' README.md
+          grep -q 'docs/ARCHITECTURE.md' README.md
           echo "Required repository files and documentation links are present."
       - name: Lint Markdown
         run: npx --yes markdownlint-cli2@0.18.1 "**/*.md" ".github/**/*.md"
