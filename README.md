@@ -6,7 +6,7 @@ VIRTUE WISE explores ways to help people connect information, understand the bas
 
 > **Core idea:** move beyond answers alone toward understanding that can be examined, corrected, and used.
 
-[Vision](docs/VISION.md) · [Prototype plan](docs/PROTOTYPE.md) · [Architecture](docs/ARCHITECTURE.md) · [Acceptance walkthrough](docs/ACCEPTANCE.md) · [Roadmap](ROADMAP.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
+[Vision](docs/VISION.md) · [Prototype plan](docs/PROTOTYPE.md) · [Architecture](docs/ARCHITECTURE.md) · [Acceptance walkthrough](docs/ACCEPTANCE.md) · [Model evaluation protocol](docs/MODEL_EVALUATION.md) · [Roadmap](ROADMAP.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
 
 ## Why this project
 
@@ -60,6 +60,7 @@ pytest
 - Scenario comparison is qualitative, not a prediction engine.
 - Edit dialogs are basic native browser prompts.
 - Manual accessibility and end-to-end acceptance reviews remain to be completed.
+- Richer entities, source records, and migrations are deferred pending the evidence-gathering process in [the model evaluation protocol](docs/MODEL_EVALUATION.md).
 
 Try the fictional [demo model](examples/demo-project.json) and follow the [manual acceptance walkthrough](docs/ACCEPTANCE.md). See [architecture notes](docs/ARCHITECTURE.md), the [prototype specification](docs/PROTOTYPE.md), and [roadmap](ROADMAP.md) for detail.
 
@@ -85,6 +86,7 @@ Contributions are welcome across engineering, research, product design, accessib
 | [Prototype plan](docs/PROTOTYPE.md) | Scope, technical choices, acceptance criteria |
 | [Architecture](docs/ARCHITECTURE.md) | Implementation, boundaries, and known limitations |
 | [Acceptance walkthrough](docs/ACCEPTANCE.md) | Manual workflow and accessibility checklist |
+| [Model evaluation protocol](docs/MODEL_EVALUATION.md) | Evidence-based criteria for deciding whether to expand the data model |
 | [Brand guide](docs/BRAND.md) | Visual identity and documentation standards |
 | [Roadmap](ROADMAP.md) | Proposed milestones |
 | [Contributing](CONTRIBUTING.md) | Contribution workflow |
