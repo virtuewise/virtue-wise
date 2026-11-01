@@ -1,6 +1,7 @@
 """Behavioral tests for the VIRTUE WISE prototype API."""
 
 import json
+from pathlib import Path
 
 from fastapi.testclient import TestClient
 
@@ -159,6 +160,24 @@ def test_json_import_validates_before_replacing_model(tmp_path, monkeypatch):
     assert imported.status_code == 200
     assert imported.json()["title"] == "Imported plan"
     assert imported.json()["hypotheses"][0]["evidence_statement_ids"] == ["statement-1"]
+
+
+def test_documented_demo_model_imports_and_preserves_links(tmp_path, monkeypatch):
+    client = test_client(tmp_path, monkeypatch)
+    example_path = Path(__file__).resolve().parents[1] / "examples" / "demo-project.json"
+    with example_path.open("rb") as example:
+        imported = client.put(
+            "/api/import",
+            files={"upload": ("demo-project.json", example, "application/json")},
+        )
+    assert imported.status_code == 200
+    model = imported.json()
+    assert model["title"] == "Improve a small team planning cycle"
+    assert len(model["statements"]) == 3
+    assert len(model["hypotheses"]) == 1
+    assert len(model["scenarios"]) == 2
+    statement_ids = {statement["id"] for statement in model["statements"]}
+    assert set(model["hypotheses"][0]["evidence_statement_ids"]) <= statement_ids
 
 
 def test_import_rejects_dangling_evidence_and_oversized_upload(tmp_path, monkeypatch):
