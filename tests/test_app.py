@@ -286,13 +286,11 @@ def test_duplicate_evidence_links_are_rejected_without_corrupting_saved_model(
     assert client.get("/api/model").json()["hypotheses"] == []
 
 
-def test_duplicate_evidence_links_are_rejected_on_update_and_import(
-    tmp_path, monkeypatch
-):
+def test_duplicate_evidence_links_are_rejected_on_update_and_import(tmp_path, monkeypatch):
     client = test_client(tmp_path, monkeypatch)
-    statement = client.post(
-        "/api/statements", json={"text": "A sourced observation"}
-    ).json()["statements"][0]
+    statement = client.post("/api/statements", json={"text": "A sourced observation"}).json()[
+        "statements"
+    ][0]
     hypothesis = client.post(
         "/api/hypotheses",
         json={"claim": "A candidate explanation"},
@@ -308,7 +306,9 @@ def test_duplicate_evidence_links_are_rejected_on_update_and_import(
         },
     )
     assert invalid_update.status_code == 422
-    assert client.get("/api/model").json()["hypotheses"][0]["evidence_statement_ids"] == []
+    assert (
+        client.get("/api/model").json()["hypotheses"][0]["evidence_statement_ids"] == []
+    )
 
     invalid_import = client.put(
         "/api/import",
