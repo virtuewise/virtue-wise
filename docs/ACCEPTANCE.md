@@ -32,7 +32,7 @@ This is a manual review checklist for the first local prototype. Use fictional d
 - [ ] Verify labels and status announcements with a screen reader.
 - [ ] Check at narrow mobile width and at 200% zoom.
 - [ ] Confirm long user-provided text wraps without horizontal page scrolling.
-- [ ] Confirm browser dialogs are understandable and cancel safely.
+- [ ] Confirm native edit dialogs expose clear labels and validation errors, move focus appropriately, and cancel safely.
 
 ## Sign-off
 
