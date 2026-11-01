@@ -82,7 +82,7 @@ async def import_model(upload: UploadFile) -> ProjectModel:
     try:
         payload = json.loads(raw)
         model = ProjectModel.model_validate(payload)
-    except (json.JSONDecodeError, UnicodeDecodeError, ValidationError, ValueError) as exc:
+    except (UnicodeDecodeError, ValueError) as exc:
         raise HTTPException(status_code=422, detail=f"Invalid VIRTUE WISE model: {exc}") from exc
     return store.save_model(model)
 
