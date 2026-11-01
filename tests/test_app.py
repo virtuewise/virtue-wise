@@ -270,9 +270,9 @@ def test_duplicate_evidence_links_are_rejected_without_corrupting_saved_model(
     tmp_path, monkeypatch
 ):
     client = test_client(tmp_path, monkeypatch)
-    statement = client.post(
-        "/api/statements", json={"text": "A sourced observation"}
-    ).json()["statements"][0]
+    statement = client.post("/api/statements", json={"text": "A sourced observation"}).json()[
+        "statements"
+    ][0]
 
     invalid = client.post(
         "/api/hypotheses",
