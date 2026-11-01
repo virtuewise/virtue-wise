@@ -284,4 +284,3 @@ def test_duplicate_evidence_links_are_rejected_without_corrupting_saved_model(
 
     assert invalid.status_code == 422
     assert client.get("/api/model").json()["hypotheses"] == []
-
