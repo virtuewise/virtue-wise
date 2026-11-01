@@ -68,9 +68,24 @@
           <ul id="hypothesis-list" class="item-list"></ul>
         </section>
       </div>
+      <section class="panel" aria-labelledby="scenarios-heading">
+        <div class="section-heading"><div><p class="eyebrow">04 / Alternatives</p><h2 id="scenarios-heading">Compare scenarios</h2></div><span class="count" id="scenario-count">0</span></div>
+        <p class="section-copy">Describe alternatives and make assumptions explicit. This is a qualitative comparison, not a prediction or score.</p>
+        <form id="scenario-form" class="stack">
+          <label for="scenario-name">Scenario name</label>
+          <input id="scenario-name" maxlength="200" required placeholder="e.g. Reduce the project scope">
+          <label for="scenario-assumptions">Assumptions (one per line)</label>
+          <textarea id="scenario-assumptions" rows="3" placeholder="What needs to be true for this option to work?"></textarea>
+          <label for="scenario-outcome">Expected outcome and trade-offs</label>
+          <textarea id="scenario-outcome" maxlength="2000" rows="2" placeholder="What might happen, and what could be lost?"></textarea>
+          <div><button class="button button-secondary" type="submit">Add scenario</button></div>
+        </form>
+        <div id="scenario-list" class="scenario-grid"></div>
+        <p id="scenario-comparison-note" class="field-help">Add at least two scenarios to compare their assumptions and expected outcomes side by side.</p>
+      </section>
       <section class="panel export-panel" aria-labelledby="data-heading">
         <div><p class="eyebrow">04 / Ownership</p><h2 id="data-heading">Your data stays yours</h2><p class="section-copy">The prototype stores one model in a local SQLite database. Export a portable JSON copy or delete the saved model. Do not enter sensitive personal data.</p></div>
-        <div class="actions"><a class="button button-secondary" href="/api/export">Export JSON</a><button id="delete-model" class="button button-danger" type="button">Delete local model</button></div>
+        <div class="actions"><a class="button button-secondary" href="/api/export">Export JSON</a><label class="button button-secondary upload-label" for="import-file">Import JSON</label><input id="import-file" class="visually-hidden" type="file" accept="application/json,.json"><button id="delete-model" class="button button-danger" type="button">Delete local model</button></div>
       </section>
       <footer><p>VIRTUE WISE is an experimental decision-support prototype, not a source of professional advice or reliable predictions.</p><a href="https://github.com/virtuewise/virtue-wise">Repository &amp; documentation</a></footer>
     </main>
