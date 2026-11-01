@@ -30,5 +30,7 @@ jobs:
           grep -q 'docs/PROTOTYPE.md' README.md
           grep -q 'docs/ARCHITECTURE.md' README.md
           echo "Required repository files and documentation links are present."
+      - name: Check browser JavaScript syntax
+        run: node --check app/static/app.js
       - name: Lint Markdown
         run: npx --yes markdownlint-cli2@0.18.1 "**/*.md" ".github/**/*.md"
