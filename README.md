@@ -1,105 +1,89 @@
-<div align="center">
-
 # VIRTUE WISE
 
-### A foundation for human understanding and intelligence.
+**An open foundation for evidence-aware, human-directed intelligence.**
 
-**Make the invisible connections visible. Turn understanding into action.**
+VIRTUE WISE explores ways to help people connect information, understand the basis of an inference, represent uncertainty, and compare possible decisions—while keeping the underlying model inspectable and under the user's control.
+
+> **Core idea:** move beyond answers alone toward understanding that can be examined, corrected, and used.
 
 [Vision](docs/VISION.md) · [Roadmap](ROADMAP.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
 
-</div>
-
 ---
 
-## What is VIRTUE WISE?
+## Why this project
 
-VIRTUE WISE is an open-source initiative exploring a new layer between people, information, and intelligent software: systems that help people represent their world, discover meaningful connections, examine uncertainty, explore possible decisions, and act with greater clarity.
+Information is abundant, but context is fragmented. A useful system should do more than produce a plausible response: it should help people see what is known, where it came from, what is inferred, what remains uncertain, and how different choices could lead to different outcomes.
 
-We are not setting out to build another chatbot or tie the project to a single AI model. We want to investigate the foundations for tools that can make complex information more understandable, useful, and under the user's control.
+VIRTUE WISE is an open-source effort to investigate that foundation. It is not tied to one AI model or provider, and it does not assume that a system should make decisions on a person's behalf.
 
-> **Our working thesis:** software should do more than return answers. It should help people understand how an answer relates to the evidence, assumptions, goals, and possible consequences that matter to them.
+## What we are exploring
 
-VIRTUE WISE is an early-stage, research-driven project. Its proposed architecture and capabilities are goals to validate—not claims that every feature already exists or that the underlying ideas have never been explored before.
+- **Evidence and provenance** — connect claims to sources, observations, and revisions.
+- **A structured world model** — represent entities, events, relationships, goals, and context.
+- **Explicit uncertainty** — distinguish observed information from hypotheses, inferences, and unknowns.
+- **Scenario exploration** — make assumptions and trade-offs visible when comparing possible actions.
+- **Human correction** — allow people to challenge, revise, or reject the model's suggestions.
+- **Portability and control** — work toward inspectable data and flexible integrations rather than avoidable lock-in.
 
-## The problem we are exploring
+These are research and development goals, not a claim that all capabilities are already implemented.
 
-People increasingly have access to powerful software and AI, yet still struggle to connect scattered information, understand why a recommendation was made, compare alternatives, and preserve useful context across tools.
+## Design principles
 
-VIRTUE WISE will explore a user-controlled, inspectable world model that can represent:
+1. **Human agency:** support judgment; do not replace ownership of decisions.
+2. **Traceability:** make important claims and inferences inspectable.
+3. **Intellectual honesty:** communicate uncertainty, limitations, and competing explanations.
+4. **User control:** make correction and data portability first-class concerns.
+5. **Modularity:** avoid unnecessary dependence on a single model or provider.
+6. **Evidence-led development:** test small, useful workflows before expanding scope.
+7. **Open collaboration:** document assumptions, evaluate prior work, and publish limitations clearly.
 
-- **Facts and sources** — what is known, where it came from, and when it was observed.
-- **Relationships and context** — how entities, events, goals, and ideas may connect.
-- **Uncertainty and hypotheses** — what is inferred, how confident that inference is, and what evidence could change it.
-- **Possible scenarios** — assumptions, choices, trade-offs, and plausible outcomes.
-- **Feedback and change** — how corrections and new evidence update the model over time.
+## Initial milestone
 
-## Principles
+The first intended prototype will test a focused end-to-end workflow:
 
-1. **Human agency first.** The system supports decisions; it does not take ownership of them.
-2. **Evidence over mystique.** Important inferences should be inspectable, challengeable, and linked to their supporting evidence.
-3. **Uncertainty is a feature.** Distinguish observations, user statements, inferences, and unknowns.
-4. **Portable by design.** Avoid lock-in to a single model, cloud provider, or proprietary data format.
-5. **Privacy and user control.** Prefer local-first workflows where practical, with clear permissions and export/delete paths.
-6. **Useful before ambitious.** Validate a small end-to-end experience before expanding the architecture.
-7. **Open research.** Document assumptions, prior art, limitations, and evaluation results honestly.
+1. A person enters a goal and a small set of facts or events.
+2. The system builds an editable representation with source references.
+3. It proposes a possible connection and explains the supporting evidence and uncertainty.
+4. The person can correct or reject that proposal.
+5. The person can compare a small number of alternatives under explicit assumptions.
 
-## Initial direction
+The milestone is a testable prototype—not a promise of a complete personal intelligence platform.
 
-The first prototype is intended to test one complete loop:
+## Current status
 
-1. A user enters a goal and a small set of facts or events.
-2. VIRTUE WISE builds an editable, source-linked representation.
-3. The system suggests a possible connection and explains its evidence and uncertainty.
-4. The user can correct or reject the suggestion.
-5. The user compares a small number of alternative actions or assumptions.
+**Stage: concept and prototype planning.**
 
-The first milestone is a credible, testable prototype—not a promise of a complete personal intelligence platform.
+The architecture, APIs, and implementation choices are not yet stable. This repository is being organized around a clear vision, responsible contribution practices, and a staged roadmap. Working development instructions will be added when the runtime and tooling are selected; placeholder commands will not be presented as functional setup steps.
 
-## Proposed architecture
+See the [vision](docs/VISION.md) for the longer-term rationale and the [roadmap](ROADMAP.md) for planned milestones.
 
-The architecture is exploratory and will evolve as the project is validated.
+## Contributing
 
-- **World model:** entities, relationships, events, and temporal context.
-- **Evidence layer:** source references, provenance, confidence, and revisions.
-- **Inference layer:** candidate relationships and hypotheses, separated from observed facts.
-- **Scenario layer:** explicit assumptions and comparisons between possible futures.
-- **Adapters:** optional model, rules-engine, storage, and tool integrations.
-- **Experience layer:** a playground that makes the model visible and editable.
+Contributions are welcome across engineering, research, product design, accessibility, testing, documentation, and security.
 
-See [the vision](docs/VISION.md) and [roadmap](ROADMAP.md) for the current direction.
+- Start with [CONTRIBUTING.md](CONTRIBUTING.md).
+- Check the [roadmap](ROADMAP.md) before proposing substantial work.
+- Use the repository's issue templates to report a bug or suggest an improvement.
+- For security-sensitive reports, follow [SECURITY.md](SECURITY.md).
 
-## Status
+For significant architectural changes, please open an issue for discussion before beginning a large implementation.
 
-**Stage: concept and prototype planning.** APIs, architecture, and scope are not yet stable. Expect breaking changes until the project publishes its first stable release.
+## Project documents
 
-## Get involved
-
-We welcome thoughtful contributions in software engineering, research, design, documentation, testing, accessibility, and threat modeling.
-
-- Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
-- Review the [roadmap](ROADMAP.md) to understand the proposed milestones.
-- Use the issue templates to report bugs or propose focused improvements.
-- For security concerns, follow [SECURITY.md](SECURITY.md).
-
-Please discuss substantial architectural changes in an issue before investing in a large pull request.
-
-## Development
-
-The project tooling is not yet finalized. Before implementation begins, the maintainers will choose and document the supported runtime, package manager, test commands, and local setup instructions. We will not publish placeholder commands as if they were working build steps.
+| Document | Purpose |
+| --- | --- |
+| [Vision](docs/VISION.md) | Motivation, intended direction, and foundational ideas |
+| [Roadmap](ROADMAP.md) | Proposed milestones and sequencing |
+| [Contributing](CONTRIBUTING.md) | Contribution workflow and expectations |
+| [Code of Conduct](CODE_OF_CONDUCT.md) | Community standards |
+| [Security](SECURITY.md) | Responsible security reporting |
+| [Repository setup](REPOSITORY_SETUP.md) | Maintainer setup checklist |
+| [License](LICENSE) | Project license |
 
 ## License
 
-Unless a directory or file states otherwise, VIRTUE WISE is intended to be distributed under the [MIT License](LICENSE).
-
-## Name and scope
-
-VIRTUE WISE is the project name. The repository's purpose is to develop open foundations and practical tools for inspectable, user-controlled systems that connect information, reasoning, and action. The project does not claim that any individual concept described here is unprecedented; originality will be evaluated through implementation, research, and comparison with prior work.
+Unless otherwise stated in a specific file or directory, this project is distributed under the [MIT License](LICENSE).
 
 ---
 
-<div align="center">
-
-**Understand more. Choose with clarity. Build openly.**
-
-</div>
+*Understand the evidence. Make uncertainty visible. Keep people in control.*
