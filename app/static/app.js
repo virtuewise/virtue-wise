@@ -103,6 +103,40 @@ function render() {
       rationale.textContent = hypothesis.rationale;
       item.append(rationale);
     }
+    const evidenceBlock = document.createElement("div");
+    evidenceBlock.className = "evidence-links";
+    if (hypothesis.evidence_statement_ids.length === 0) {
+      const emptyEvidence = document.createElement("p");
+      emptyEvidence.className = "meta";
+      emptyEvidence.textContent = "No evidence statements linked.";
+      evidenceBlock.append(emptyEvidence);
+    }
+    hypothesis.evidence_statement_ids.forEach((statementId) => {
+      const statement = model.statements.find((candidate) => candidate.id === statementId);
+      if (!statement) return;
+      const evidenceRow = document.createElement("div");
+      evidenceRow.className = "evidence-row";
+      const evidenceLabel = document.createElement("span");
+      evidenceLabel.textContent = `Evidence: ${statement.text}`;
+      const unlink = button("Unlink", "button button-small", () => {
+        runAction(async () => {
+          model = await request(`/api/hypotheses/${encodeURIComponent(hypothesis.id)}`, {
+            method: "PUT",
+            body: JSON.stringify({
+              claim: hypothesis.claim,
+              rationale: hypothesis.rationale,
+              evidence_statement_ids: hypothesis.evidence_statement_ids.filter((id) => id !== statementId),
+              uncertainty: hypothesis.uncertainty,
+            }),
+          });
+          render();
+        }, "Evidence link removed.");
+      });
+      unlink.setAttribute("aria-label", `Unlink evidence statement: ${statement.text.slice(0, 60)}`);
+      evidenceRow.append(evidenceLabel, unlink);
+      evidenceBlock.append(evidenceRow);
+    });
+    item.append(evidenceBlock);
     const editControls = document.createElement("div");
     editControls.className = "review-controls";
     editControls.append(button("Edit hypothesis", "button button-small", () => editHypothesis(hypothesis)));
@@ -178,11 +212,6 @@ function renderScenarios() {
   byId("scenario-comparison-note").textContent = model.scenarios.length >= 2
     ? "Compare assumptions and expected outcomes side by side. Differences are descriptive, not scored predictions."
     : "Add at least two scenarios to compare their assumptions and expected outcomes side by side.";
-}
-
-async function refreshModel() {
-  model = await request("/api/model");
-  render();
 }
 
 async function editStatement(statement) {
