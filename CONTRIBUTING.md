@@ -4,7 +4,7 @@ Thank you for helping shape VIRTUE WISE. We value careful engineering, clear thi
 
 ## Before you start
 
-1. Read the [README](README.md), [vision](docs/VISION.md), and [roadmap](ROADMAP.md).
+1. Read the [README](README.md), [vision](docs/VISION.md), [prototype plan](docs/PROTOTYPE.md), and [roadmap](ROADMAP.md).
 2. Search existing issues and pull requests before starting work.
 3. For a substantial change, open an issue first to discuss scope and design.
 4. Do not submit secrets, personal data, private user content, or credentials.
@@ -16,13 +16,17 @@ Thank you for helping shape VIRTUE WISE. We value careful engineering, clear thi
 - UX, accessibility, and visual explanations
 - Documentation, examples, and onboarding
 - Security, privacy, and threat modeling
-- Reproducible bug reports and evaluation datasets that are safe to share
+- Reproducible bug reports and safe-to-share evaluation data
+
+## Technical direction
+
+The first prototype's provisional stack and acceptance criteria are in [docs/PROTOTYPE.md](docs/PROTOTYPE.md). Please discuss material deviations before adding dependencies or infrastructure. Until an application and test suite are implemented, do not imply that application-level checks have passed. The current automated workflow checks required documentation and Markdown style.
 
 ## Pull request expectations
 
 - Keep changes focused and explain the problem they solve.
 - Describe important design choices and alternatives considered.
-- Include tests for behavior changes when a test suite exists.
+- Include tests for behavior changes as the relevant code and test suite are introduced.
 - Update documentation when interfaces or expected behavior change.
 - Identify assumptions, limitations, and any user-facing risks.
 - Avoid adding dependencies without explaining why they are needed.
@@ -42,7 +46,7 @@ Conventional Commit prefixes are encouraged, not yet enforced.
 ## Design principles for contributions
 
 - Keep observations separate from inferences and recommendations.
-- Make confidence and uncertainty explicit where relevant.
+- Make uncertainty explicit where relevant; do not treat an unexplained score as a calibrated probability.
 - Make important state changes auditable and reversible where practical.
 - Prefer portable formats and provider-neutral interfaces.
 - Design for user consent, data minimization, and accessibility.
