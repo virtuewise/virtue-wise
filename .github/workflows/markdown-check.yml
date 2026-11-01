@@ -1,0 +1,25 @@
+name: Documentation checks
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+jobs:
+  check-required-files:
+    name: Check repository foundations
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Verify core documentation
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in README.md LICENSE CONTRIBUTING.md CODE_OF_CONDUCT.md SECURITY.md ROADMAP.md docs/VISION.md; do
+            test -s "$file" || { echo "Missing or empty required file: $file"; exit 1; }
+          done
+          echo "Core repository documentation is present."
