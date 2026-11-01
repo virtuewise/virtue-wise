@@ -117,7 +117,10 @@ def delete_statement(statement_id: str) -> Response:
     if any(statement_id in item.evidence_statement_ids for item in model.hypotheses):
         raise HTTPException(
             status_code=409,
-            detail="This statement is linked to a hypothesis. Remove its evidence links before deleting it.",
+            detail=(
+                "This statement is linked to a hypothesis. "
+                "Remove its evidence links before deleting it."
+            ),
         )
     model.statements = [item for item in model.statements if item.id != statement_id]
     store.save_model(model)
