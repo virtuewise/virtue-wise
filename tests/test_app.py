@@ -335,7 +335,8 @@ def test_duplicate_evidence_links_are_rejected_on_update_and_import(tmp_path, mo
 
 
 def test_record_deletions_preserve_saved_model_when_persistence_fails(tmp_path, monkeypatch):
-    client = test_client(tmp_path, monkeypatch)
+    monkeypatch.setenv("VIRTUE_WISE_DB", str(tmp_path / "delete-failure.sqlite3"))
+    client = TestClient(app, raise_server_exceptions=False)
     statement = client.post("/api/statements", json={"text": "A statement to retain"}).json()[
         "statements"
     ][0]
