@@ -355,4 +355,3 @@ def test_record_deletions_preserve_saved_model_when_persistence_fails(tmp_path, 
     saved = store.load_model()
     assert [item.id for item in saved.statements] == [statement["id"]]
     assert [item.id for item in saved.scenarios] == [scenario["id"]]
-
