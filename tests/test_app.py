@@ -264,3 +264,23 @@ def test_store_round_trip(tmp_path, monkeypatch):
     restored = store.load_model()
     assert restored.id == model.id
     assert restored.schema_version == 1
+
+
+def test_duplicate_evidence_links_are_rejected_without_corrupting_saved_model(
+    tmp_path, monkeypatch
+):
+    client = test_client(tmp_path, monkeypatch)
+    statement = client.post("/api/statements", json={"text": "A sourced observation"}).json()[
+        "statements"
+    ][0]
+
+    invalid = client.post(
+        "/api/hypotheses",
+        json={
+            "claim": "A candidate explanation",
+            "evidence_statement_ids": [statement["id"], statement["id"]],
+        },
+    )
+
+    assert invalid.status_code == 422
+    assert client.get("/api/model").json()["hypotheses"] == []

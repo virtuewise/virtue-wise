@@ -7,7 +7,7 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException, Response, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from app import store
 from app.models import Hypothesis, ProjectModel, Scenario, Statement, now_utc
@@ -48,6 +48,17 @@ app = FastAPI(
     version="0.2.0",
     lifespan=lifespan,
 )
+
+
+def save_validated_model(model: ProjectModel) -> ProjectModel:
+    """Revalidate mutable model state before persisting it."""
+    try:
+        validated = ProjectModel.model_validate(model.model_dump(mode="python"))
+    except ValidationError as exc:
+        raise HTTPException(status_code=422, detail=f"Invalid model: {exc}") from exc
+    return store.save_model(validated)
+
+
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
@@ -68,7 +79,7 @@ def get_model() -> ProjectModel:
 
 @app.put("/api/model", response_model=ProjectModel)
 def replace_model(model: ProjectModel) -> ProjectModel:
-    return store.save_model(model)
+    return save_validated_model(model)
 
 
 @app.put("/api/import", response_model=ProjectModel)
@@ -84,7 +95,7 @@ async def import_model(upload: UploadFile) -> ProjectModel:
         model = ProjectModel.model_validate(payload)
     except (UnicodeDecodeError, ValueError) as exc:
         raise HTTPException(status_code=422, detail=f"Invalid VIRTUE WISE model: {exc}") from exc
-    return store.save_model(model)
+    return save_validated_model(model)
 
 
 @app.post("/api/statements", response_model=ProjectModel, status_code=201)
@@ -93,7 +104,7 @@ def add_statement(statement: Statement) -> ProjectModel:
     if any(item.id == statement.id for item in model.statements):
         raise HTTPException(status_code=409, detail="A statement with this ID already exists.")
     model.statements.append(statement)
-    return store.save_model(model)
+    return save_validated_model(model)
 
 
 @app.put("/api/statements/{statement_id}", response_model=ProjectModel)
@@ -117,7 +128,7 @@ def update_statement(statement_id: str, statement: Statement) -> ProjectModel:
                 hypothesis.review_status = "proposed"
                 hypothesis.review_note = ""
                 hypothesis.reviewed_at = None
-    return store.save_model(model)
+    return save_validated_model(model)
 
 
 @app.delete("/api/statements/{statement_id}", status_code=204)
@@ -146,8 +157,10 @@ def add_hypothesis(hypothesis: Hypothesis) -> ProjectModel:
     known_ids = {statement.id for statement in model.statements}
     if set(hypothesis.evidence_statement_ids) - known_ids:
         raise HTTPException(status_code=422, detail="Evidence must reference existing statements.")
+    if len(hypothesis.evidence_statement_ids) != len(set(hypothesis.evidence_statement_ids)):
+        raise HTTPException(status_code=422, detail="Evidence links must be unique.")
     model.hypotheses.append(hypothesis)
-    return store.save_model(model)
+    return save_validated_model(model)
 
 
 @app.put("/api/hypotheses/{hypothesis_id}", response_model=ProjectModel)
@@ -161,6 +174,8 @@ def update_hypothesis(hypothesis_id: str, update: HypothesisUpdate) -> ProjectMo
     known_ids = {statement.id for statement in model.statements}
     if set(update.evidence_statement_ids) - known_ids:
         raise HTTPException(status_code=422, detail="Evidence must reference existing statements.")
+    if len(update.evidence_statement_ids) != len(set(update.evidence_statement_ids)):
+        raise HTTPException(status_code=422, detail="Evidence links must be unique.")
     changed = any(
         (
             hypothesis.claim != update.claim,
@@ -177,7 +192,7 @@ def update_hypothesis(hypothesis_id: str, update: HypothesisUpdate) -> ProjectMo
         hypothesis.review_status = "proposed"
         hypothesis.review_note = ""
         hypothesis.reviewed_at = None
-    return store.save_model(model)
+    return save_validated_model(model)
 
 
 @app.patch("/api/hypotheses/{hypothesis_id}/review", response_model=ProjectModel)
@@ -194,7 +209,7 @@ def review_hypothesis(hypothesis_id: str, request: ReviewRequest) -> ProjectMode
     hypothesis.review_status = request.status
     hypothesis.review_note = request.note
     hypothesis.reviewed_at = now_utc()
-    return store.save_model(model)
+    return save_validated_model(model)
 
 
 @app.post("/api/scenarios", response_model=ProjectModel, status_code=201)
@@ -203,7 +218,7 @@ def add_scenario(scenario: Scenario) -> ProjectModel:
     if any(item.id == scenario.id for item in model.scenarios):
         raise HTTPException(status_code=409, detail="A scenario with this ID already exists.")
     model.scenarios.append(scenario)
-    return store.save_model(model)
+    return save_validated_model(model)
 
 
 @app.put("/api/scenarios/{scenario_id}", response_model=ProjectModel)
@@ -215,7 +230,7 @@ def update_scenario(scenario_id: str, update: ScenarioInput) -> ProjectModel:
     scenario.name = update.name
     scenario.assumptions = update.assumptions
     scenario.expected_outcome = update.expected_outcome
-    return store.save_model(model)
+    return save_validated_model(model)
 
 
 @app.delete("/api/scenarios/{scenario_id}", status_code=204)
