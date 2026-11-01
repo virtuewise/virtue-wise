@@ -1,51 +1,52 @@
 # Roadmap
 
-This roadmap records hypotheses and intended milestones. Dates and feature commitments will be added only after scope and capacity are understood. The [prototype specification](docs/PROTOTYPE.md) defines the proposed first implementation; the application itself is not yet implemented.
+This roadmap separates the **first local prototype** from the broader research vision. The first prototype is now implemented in `main`; completion of that small milestone does not mean the wider VIRTUE WISE world-model concept is complete or production-ready.
 
 ## Phase 0 — Define the problem
 
 - [x] Write a concise first user journey and prototype acceptance criteria
 - [ ] Review adjacent work in knowledge graphs, personal knowledge management, provenance, and scenario planning
 - [ ] Define terminology: observation, user statement, inference, hypothesis, recommendation, scenario
-- [ ] Document privacy and threat-model assumptions
+- [x] Document initial privacy and threat-model assumptions
 - [x] Establish project license, governance guidance, and contribution process
-- [x] Propose an initial stack and keep it documented in the prototype specification
+- [x] Select and document an initial stack
 
-## Phase 1 — Build a minimal world model
+## Phase 1 — Implement the scoped local model
 
-- [ ] Implement a small, versioned schema for entities, statements, hypotheses, and sources
-- [ ] Support provenance and timestamps
-- [ ] Separate user-provided statements from inferred relationships
-- [ ] Add schema validation and serialization tests
-- [ ] Provide import/export for a documented portable JSON format
-- [ ] Add local SQLite persistence and deletion
+- [x] Implement a versioned Pydantic schema for the first project, statement, hypothesis, and scenario records
+- [x] Keep user-provided statements distinct from hypotheses
+- [x] Validate unique record identifiers and evidence references
+- [x] Add local SQLite persistence and deletion
+- [x] Provide JSON export and validated import for schema version 1
+- [ ] Design richer first-class entities, source records, temporal context, and relation types
+- [ ] Define schema migration and compatibility policy
 
-## Phase 2 — Make it understandable
+## Phase 2 — Make the model understandable
 
-- [ ] Build a small local interface for editing a world model
-- [ ] Display evidence and uncertainty for candidate relationships
-- [ ] Allow users to correct, reject, and remove information
-- [ ] Record review decisions without silently overwriting source statements
-- [ ] Test accessibility and keyboard navigation
+- [x] Build a local browser interface for project and record editing
+- [x] Display source labels, evidence links, and qualitative uncertainty
+- [x] Allow users to correct hypotheses and unlink evidence
+- [x] Record accept/revise/reject decisions without rewriting source statements
+- [ ] Complete a manual end-to-end walkthrough from a clean checkout
+- [ ] Complete keyboard-only, screen-reader, and accessibility testing
 
-## Phase 3 — Test useful inference
+## Phase 3 — Evaluate useful inference
 
-- [ ] Start with transparent, deterministic suggestions and user-created relationships
-- [ ] Evaluate usefulness, false connections, and explanation quality
-- [ ] Consider optional model-assisted suggestions only after the core workflow works
-- [ ] Make every generated hypothesis traceable to its inputs
-- [ ] Publish evaluation examples and known failure modes
+- [x] Keep hypotheses user-created; do not require an external model
+- [ ] Define deterministic suggestion rules and evaluate usefulness and false connections
+- [ ] Publish evaluation examples, limitations, and known failure modes
+- [ ] Consider optional model-assisted suggestions only after the core workflow has been evaluated
 
 ## Phase 4 — Explore scenarios
 
-- [ ] Represent explicit assumptions and proposed actions
-- [ ] Compare alternatives without presenting speculative outcomes as certainty
-- [ ] Distinguish deterministic calculations from model-generated estimates
-- [ ] Test with a narrow, low-risk use case
+- [x] Represent alternatives with explicit assumptions and expected outcomes
+- [x] Compare scenarios descriptively without fabricated scores or certainty
+- [ ] Test the workflow with a documented, fictional project-planning example
+- [ ] Evaluate whether the comparison helps users make better-informed choices
 
-## Phase 5 — Build an ecosystem
+## Phase 5 — Broader platform and ecosystem
 
-- [ ] Stabilize the core data format and compatibility policy
+- [ ] Stabilize the core data format after evaluation
 - [ ] Document adapter interfaces only when a real integration requires them
 - [ ] Add integration examples and contributor guides
 - [ ] Establish release, deprecation, and governance processes
@@ -69,3 +70,7 @@ Early success is not measured only by stars. We will look for:
 - Making consequential decisions without meaningful human control
 - Building a broad feature set before validating the core loop
 - Requiring cloud services, third-party accounts, or paid model APIs
+
+## Current completion boundary
+
+The runnable local prototype supports project editing, sourced statements, hypothesis review, qualitative scenario comparison, JSON import/export, local deletion, API tests, and CI. It is not a complete general-purpose world model, and it is not production-hardened: authentication, encryption at rest, multi-user operation, migrations, and a completed manual accessibility review remain out of scope or unfinished.
