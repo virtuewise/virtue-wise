@@ -6,7 +6,7 @@ VIRTUE WISE explores ways to help people connect information, understand the bas
 
 > **Core idea:** move beyond answers alone toward understanding that can be examined, corrected, and used.
 
-[Vision](docs/VISION.md) · [Prototype plan](docs/PROTOTYPE.md) · [Architecture](docs/ARCHITECTURE.md) · [Acceptance walkthrough](docs/ACCEPTANCE.md) · [Model evaluation protocol](docs/MODEL_EVALUATION.md) · [Roadmap](ROADMAP.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
+[Vision](docs/VISION.md) · [Prototype plan](docs/PROTOTYPE.md) · [Architecture](docs/ARCHITECTURE.md) · [Acceptance walkthrough](docs/ACCEPTANCE.md) · [Model evaluation protocol](docs/MODEL_EVALUATION.md) · [Threat model](docs/THREAT_MODEL.md) · [Release and recovery](docs/RELEASE_READINESS.md) · [Roadmap](ROADMAP.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
 
 ## Why this project
 

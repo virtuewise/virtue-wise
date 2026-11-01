@@ -84,6 +84,34 @@ Publish a short evaluation note that includes the tasks attempted, number and ty
 
 A decision may be **defer**. If no repeated, consequential limitation is observed, retain the current model and revisit after new use cases appear. If a change is justified, implement the smallest slice and evaluate it before expanding further.
 
+## Current behavior baseline and known failure modes
+
+This section describes what the current implementation does; it is **not** an empirical finding about user outcomes or inference accuracy.
+
+### Worked example (fictional)
+
+A user records the statement “Two planning meetings overran” with a source label such as “Weekly planning notes”. The user creates the hypothesis “Agenda scope may contribute to overruns”, links the statement as evidence, and chooses an uncertainty label. The application stores and displays those records separately. It does not independently verify the note, discover the hypothesis, determine whether the evidence supports it, or estimate the probability that a narrower agenda will help.
+
+The user can then compare scenarios such as “Reduce agenda scope” and “Keep current agenda” by writing assumptions and expected outcomes. The application displays those descriptions; it does not calculate which scenario is more likely to succeed.
+
+### Known failure modes and interpretation limits
+
+| Example or condition | Current behavior / possible failure | Safe interpretation |
+| --- | --- | --- |
+| A user labels a hypothesis “supported” | The label is a user-selected qualitative field; the application does not calculate support or confidence | Treat the label as a recorded human judgment, not a model score |
+| A source label or excerpt is inaccurate | The app stores user-provided text and does not verify source authenticity or quotation context | Verify important source material independently |
+| Evidence points both for and against a claim | Evidence links have no explicit support/contradiction polarity | Do not infer that every linked statement supports the claim; record the nuance in the rationale until a tested schema change is justified |
+| Two statements use the same source | Each statement has its own source label and optional excerpt; there is no shared first-class source record | Repeated source metadata may drift; evaluate this as a workflow limitation before adding a source entity |
+| A hypothesis is linked to an observation and then edited | Material edits reopen the review state, but this does not independently assess whether the new hypothesis follows from the observation | Re-review the changed claim; the reset is a workflow safeguard, not inference validation |
+| A scenario says “this option will reduce delays” | Expected outcomes are free text; there is no probability, causal model, calibration, or outcome-tracking loop | Treat the text as an assumption or expectation, not a forecast |
+| A user omits relevant context or provides a misleading statement | The app cannot discover omitted facts or detect deception from the current records | Model completeness and input quality remain user responsibilities |
+
+These examples are design-level checks derived from the current schema and interface. They do not establish the frequency of these failures in real use. The evaluation remains incomplete until representative tasks are performed and observations are recorded under the procedure above.
+
+### Evidence required before adding automated inference
+
+Do not add automatic relationship suggestions, confidence scores, causal claims, or outcome rankings merely because the schema can represent them. First collect task observations with fictional examples, record false connections and missed relationships, define a reviewable success criterion, and compare against a simple baseline. If the evidence is too small or ambiguous, document the uncertainty and defer the feature.
+
 ## Current status
 
 - [ ] Clean-checkout manual walkthrough performed and recorded.
