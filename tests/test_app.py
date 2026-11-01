@@ -97,6 +97,54 @@ def test_review_transition_does_not_change_statements(tmp_path, monkeypatch):
     assert response.json()["statements"][0]["text"] == "A user-provided observation"
 
 
+def test_editing_reviewed_evidence_reopens_hypothesis_review(tmp_path, monkeypatch):
+    client = test_client(tmp_path, monkeypatch)
+    statement = client.post(
+        "/api/statements",
+        json={"text": "Initial observation", "source_label": "Planning notes"},
+    ).json()["statements"][0]
+    hypothesis = client.post(
+        "/api/hypotheses",
+        json={
+            "claim": "A candidate explanation",
+            "evidence_statement_ids": [statement["id"]],
+        },
+    ).json()["hypotheses"][0]
+    reviewed = client.patch(
+        f"/api/hypotheses/{hypothesis['id']}/review",
+        json={"status": "accepted", "note": "Reviewed against the original note."},
+    )
+    assert reviewed.json()["hypotheses"][0]["review_status"] == "accepted"
+
+    edited_statement = client.put(
+        f"/api/statements/{statement['id']}",
+        json={**statement, "text": "Corrected observation"},
+    )
+    updated_hypothesis = edited_statement.json()["hypotheses"][0]
+    assert updated_hypothesis["review_status"] == "proposed"
+    assert updated_hypothesis["review_note"] == ""
+    assert updated_hypothesis["reviewed_at"] is None
+
+    accepted_again = client.patch(
+        f"/api/hypotheses/{hypothesis['id']}/review",
+        json={"status": "accepted", "note": "Reviewed again."},
+    )
+    assert accepted_again.json()["hypotheses"][0]["review_status"] == "accepted"
+    changed_claim = client.put(
+        f"/api/hypotheses/{hypothesis['id']}",
+        json={
+            "claim": "A materially changed explanation",
+            "rationale": "",
+            "evidence_statement_ids": [statement["id"]],
+            "uncertainty": "tentative",
+        },
+    )
+    updated_hypothesis = changed_claim.json()["hypotheses"][0]
+    assert updated_hypothesis["review_status"] == "proposed"
+    assert updated_hypothesis["review_note"] == ""
+    assert updated_hypothesis["reviewed_at"] is None
+
+
 def test_scenario_create_update_delete_and_compare(tmp_path, monkeypatch):
     client = test_client(tmp_path, monkeypatch)
     first = client.post(
