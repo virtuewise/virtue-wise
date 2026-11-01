@@ -284,3 +284,51 @@ def test_duplicate_evidence_links_are_rejected_without_corrupting_saved_model(
 
     assert invalid.status_code == 422
     assert client.get("/api/model").json()["hypotheses"] == []
+
+
+def test_duplicate_evidence_links_are_rejected_on_update_and_import(tmp_path, monkeypatch):
+    client = test_client(tmp_path, monkeypatch)
+    statement = client.post("/api/statements", json={"text": "A sourced observation"}).json()[
+        "statements"
+    ][0]
+    hypothesis = client.post(
+        "/api/hypotheses",
+        json={"claim": "A candidate explanation"},
+    ).json()["hypotheses"][0]
+
+    invalid_update = client.put(
+        f"/api/hypotheses/{hypothesis['id']}",
+        json={
+            "claim": hypothesis["claim"],
+            "rationale": "",
+            "evidence_statement_ids": [statement["id"], statement["id"]],
+            "uncertainty": "unknown",
+        },
+    )
+    assert invalid_update.status_code == 422
+    assert client.get("/api/model").json()["hypotheses"][0]["evidence_statement_ids"] == []
+
+    invalid_import = client.put(
+        "/api/import",
+        files={
+            "upload": (
+                "duplicate-evidence.json",
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "statements": [{"id": "s1", "text": "A source"}],
+                        "hypotheses": [
+                            {
+                                "id": "h1",
+                                "claim": "A claim",
+                                "evidence_statement_ids": ["s1", "s1"],
+                            }
+                        ],
+                    }
+                ),
+                "application/json",
+            )
+        },
+    )
+    assert invalid_import.status_code == 422
+    assert client.get("/api/model").json()["title"] == "Untitled project"
