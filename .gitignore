@@ -1,15 +1,24 @@
-# Dependencies
+# JavaScript dependencies and build output
 node_modules/
 .pnp
 .pnp.*
-
-# Build output
 dist/
 build/
 out/
 coverage/
 .next/
 .nuxt/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
 
 # Environment and secrets
 .env
@@ -34,5 +43,7 @@ pnpm-debug.log*
 # Local data and temporary files
 .tmp/
 .cache/
+data/*
+!data/.gitkeep
 *.sqlite
 *.sqlite3
