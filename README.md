@@ -58,11 +58,11 @@ pytest
 - No authentication, encryption at rest, CSRF protection, or production deployment hardening.
 - JSON import supports the current schema version only; migrations are not implemented.
 - Scenario comparison is qualitative, not a prediction engine.
-- Edit dialogs are basic native browser prompts.
+- Editing uses native HTML dialog forms with labels, validation, save/cancel controls, and visible error feedback.
 - Manual accessibility and end-to-end acceptance reviews remain to be completed.
 - Richer entities, source records, and migrations are deferred pending the evidence-gathering process in [the model evaluation protocol](docs/MODEL_EVALUATION.md).
 
-Try the fictional [demo model](examples/demo-project.json) and follow the [manual acceptance walkthrough](docs/ACCEPTANCE.md). See [architecture notes](docs/ARCHITECTURE.md), the [prototype specification](docs/PROTOTYPE.md), and [roadmap](ROADMAP.md) for detail.
+Try the fictional [demo model](examples/demo-project.json) and follow the [manual acceptance walkthrough](docs/ACCEPTANCE.md). Automated checks do not replace keyboard-only, screen-reader, mobile-width, zoom, and clean-checkout manual verification. See [architecture notes](docs/ARCHITECTURE.md), the [prototype specification](docs/PROTOTYPE.md), and [roadmap](ROADMAP.md) for detail.
 
 ## Project identity
 
