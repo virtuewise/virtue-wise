@@ -2,22 +2,18 @@
 
 ## Objective
 
-Validate one complete, low-risk user journey before building a broad platform:
+Validate a low-risk project-planning workflow in which a person can enter information, inspect provenance, review hypotheses, compare alternatives, and retain control over the local data.
 
-1. Enter a goal and a small set of user-authored facts or events.
-2. Store an editable, structured representation with provenance.
-3. Suggest or manually create a candidate relationship and show its evidence and uncertainty.
-4. Accept, revise, or reject the candidate.
-5. Compare two simple alternatives using explicit assumptions.
-6. Export the model as portable JSON and delete the local data.
+## Implemented in this prototype
 
-This prototype tests whether an inspectable model is useful. It is not a general-purpose personal assistant and should not make external changes on the user's behalf.
+1. Create and edit a project goal.
+2. Add, edit, and delete user-provided statements with source labels and optional excerpts.
+3. Create and edit hypotheses with explicit uncertainty and links to evidence statements.
+4. Accept, revise, or reject a hypothesis while retaining the original statements and review note.
+5. Create, edit, delete, and compare at least two named scenarios using visible assumptions and expected outcomes.
+6. Export a versioned JSON model, validate an imported JSON model before replacement, and delete local data.
 
-## Initial use case
-
-Use a small project-planning scenario with fictional or non-sensitive data. It is concrete enough to model goals, events, evidence, relationships, and alternative actions without requiring access to private accounts or high-impact personal decisions.
-
-## Proposed stack
+## Technical choices
 
 | Layer | Decision | Reason |
 | --- | --- | --- |
@@ -25,69 +21,55 @@ Use a small project-planning scenario with fictional or non-sensitive data. It i
 | API | FastAPI | Small typed HTTP API and built-in local API documentation |
 | Schema validation | Pydantic v2 | Validate input and serialized model boundaries |
 | Storage | SQLite via Python's standard library | Local-first persistence without a separate database service |
-| Interface | Server-served HTML, CSS, and vanilla JavaScript | Keeps the first UI small and avoids a separate frontend build system |
-| Tests | pytest | Focused unit and API-level tests |
+| Interface | Server-served HTML, CSS, and vanilla JavaScript | Small UI without a separate frontend build system |
+| Tests | pytest and FastAPI TestClient | Focused API and behavior tests |
 | Style and lint | Ruff | One fast tool for Python linting and formatting checks |
 | Data interchange | Versioned JSON | Human-inspectable and portable export format |
 
-These are provisional engineering choices for the first prototype, not a promise of long-term API stability. Revisit them only when a concrete limitation or evaluation result justifies it.
+These are provisional engineering choices, not a promise of long-term API stability.
 
-## Core data model
+## Core data concepts
 
-The first version should support only the following concepts:
+- **Project model:** goal, statements, hypotheses, scenarios, timestamps, and schema version.
+- **Statement:** user-provided text, source label, optional excerpt, and timestamp.
+- **Hypothesis:** candidate claim, rationale, evidence statement IDs, qualitative uncertainty, and explicit review state.
+- **Scenario:** name, assumptions, and expected outcome/trade-offs.
+- **Evidence link:** references an existing statement by stable ID.
 
-- **Entity:** stable identifier, label, type, created/updated timestamps.
-- **Statement:** subject, predicate, object or value, status, and optional time context.
-- **Source:** kind, human-readable reference, capture time, and optional excerpt supplied by the user.
-- **Evidence link:** connects a statement or hypothesis to one or more sources.
-- **Hypothesis:** proposed relationship, rationale, uncertainty label, and review status.
-- **Scenario:** named assumptions and a small set of candidate actions or outcomes.
-
-Keep observed or user-provided statements distinct from hypotheses. A hypothesis must never silently become a verified fact after acceptance; record the user's review decision explicitly.
+A hypothesis must never silently become a verified fact after acceptance. The review decision is recorded explicitly. Duplicate IDs and dangling evidence references are rejected by model validation.
 
 ## Inference policy
 
-Start with transparent, deterministic suggestions and user-created relationships. Do not require an external language model for the first milestone. If model-assisted suggestions are added later, make them optional, identify them as generated, preserve the input references, and allow users to reject them.
-
-Do not use a numeric confidence score until its meaning can be defined and evaluated. Use qualitative labels such as unknown, tentative, and supported, with documented criteria.
+The prototype uses user-created hypotheses and does not require an external language model. Qualitative labels—unknown, tentative, and supported—are not calibrated probabilities. Scenario comparison is descriptive and does not claim causal discovery or reliable prediction.
 
 ## Privacy and safety boundaries
 
-- Run locally during initial development; do not add telemetry by default.
-- Use fictional or non-sensitive sample data in tests and examples.
-- Do not connect email, calendars, cloud drives, or external accounts in the first milestone.
-- Make export and deletion part of the acceptance criteria.
-- Keep secrets out of source control and logs.
-- Treat scenario results as exploratory, not predictions or professional advice.
+- Run locally during initial development; no telemetry is included.
+- Use fictional or non-sensitive sample data.
+- Do not connect email, calendars, cloud drives, or external accounts in this milestone.
+- Export and deletion are part of the interface.
+- Imported data is validated before replacing the current model.
+- The local database is not encrypted and the app has no authentication. Do not expose it to an untrusted network.
+- Scenario results are exploratory, not predictions or professional advice.
 
 ## Acceptance criteria
 
-The prototype is ready for review when:
-
-- A new model can be created and edited through the interface.
-- Statements and hypotheses have distinct types and status.
-- A displayed hypothesis can be traced to its input evidence or clearly marked as lacking evidence.
-- A user can accept, revise, or reject a hypothesis without rewriting the source statements.
-- Two alternatives can be compared with assumptions visible.
-- JSON export round-trips through validation.
-- A user can delete the local model.
-- Automated tests cover schema validation, provenance, review-state transitions, export/import, and deletion.
-- Setup instructions work from a clean checkout on a supported Python version.
+- [x] Create and edit the project through the interface.
+- [x] Keep statements separate from hypotheses.
+- [x] Trace hypotheses to evidence or mark them as lacking evidence.
+- [x] Accept, revise, or reject a hypothesis without rewriting source statements.
+- [x] Compare alternatives with assumptions and expected outcomes visible.
+- [x] Export and validate JSON imports, including evidence references.
+- [x] Delete the local model.
+- [x] Automated API tests cover provenance, review, scenarios, import validation, export, and deletion.
+- [ ] Conduct a manual end-to-end acceptance walkthrough on a clean checkout.
+- [ ] Complete a dedicated accessibility review with keyboard and screen-reader testing.
 
 ## Deliberately out of scope
 
 - Foundation-model training or mandatory paid API calls
 - Multi-user collaboration, accounts, or cloud synchronization
-- A plugin marketplace or broad adapter framework
-- Complex autonomous agents or external actions
+- External account integrations or autonomous actions
 - Claims of causal discovery or reliable future prediction
-- A stable public API before the data model has been evaluated
-
-## Implementation sequence
-
-1. Add a minimal Python package, dependency manifest, and reproducible local setup.
-2. Implement schema types and validation tests.
-3. Implement local SQLite persistence and JSON export/import.
-4. Add a small API and accessible single-page interface.
-5. Add hypothesis review and scenario comparison.
-6. Run the acceptance checklist with a documented fictional example before expanding scope.
+- Stable public API guarantees before the data model has been evaluated
+- Authentication, encryption at rest, and production deployment hardening
