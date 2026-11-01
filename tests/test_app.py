@@ -332,3 +332,27 @@ def test_duplicate_evidence_links_are_rejected_on_update_and_import(tmp_path, mo
     )
     assert invalid_import.status_code == 422
     assert client.get("/api/model").json()["title"] == "Untitled project"
+
+
+def test_record_deletions_preserve_saved_model_when_persistence_fails(tmp_path, monkeypatch):
+    monkeypatch.setenv("VIRTUE_WISE_DB", str(tmp_path / "delete-failure.sqlite3"))
+    client = TestClient(app, raise_server_exceptions=False)
+    statement = client.post("/api/statements", json={"text": "A statement to retain"}).json()[
+        "statements"
+    ][0]
+    scenario = client.post("/api/scenarios", json={"name": "A scenario to retain"}).json()[
+        "scenarios"
+    ][0]
+
+    def fail_save(_model):
+        raise OSError("simulated storage failure")
+
+    monkeypatch.setattr(store, "save_model", fail_save)
+    statement_delete = client.delete(f"/api/statements/{statement['id']}")
+    scenario_delete = client.delete(f"/api/scenarios/{scenario['id']}")
+
+    assert statement_delete.status_code == 500
+    assert scenario_delete.status_code == 500
+    saved = store.load_model()
+    assert [item.id for item in saved.statements] == [statement["id"]]
+    assert [item.id for item in saved.scenarios] == [scenario["id"]]

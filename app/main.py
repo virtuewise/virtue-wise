@@ -145,7 +145,7 @@ def delete_statement(statement_id: str) -> Response:
             ),
         )
     model.statements = [item for item in model.statements if item.id != statement_id]
-    store.save_model(model)
+    save_validated_model(model)
     return Response(status_code=204)
 
 
@@ -239,7 +239,7 @@ def delete_scenario(scenario_id: str) -> Response:
     if not any(item.id == scenario_id for item in model.scenarios):
         raise HTTPException(status_code=404, detail="Scenario not found.")
     model.scenarios = [item for item in model.scenarios if item.id != scenario_id]
-    store.save_model(model)
+    save_validated_model(model)
     return Response(status_code=204)
 
 
