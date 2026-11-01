@@ -1,34 +1,38 @@
 # GitHub repository setup checklist
 
-## Repository
+## Repository metadata
 
 - **Owner:** `virtuewise`
 - **Repository name:** `virtue-wise`
-- **Visibility:** Public (recommended for an open-source project)
-- **Description:** `An open-source foundation for human understanding: connecting information, evidence, uncertainty, and possible actions through user-controlled world models.`
+- **Visibility:** Public
+- **Recommended description:** `An open-source project exploring evidence-aware, user-controlled world models for human understanding and decision support.`
 - **Website:** Leave blank until an official project website exists.
 - **Default branch:** `main`
-- **Initialize with README:** Do not select if uploading this prepared starter bundle; it avoids a README conflict.
-- **License:** MIT (already included in this bundle).
+- **Topics to apply:** see the list below.
+- **License:** MIT; the license file is present in the repository.
+
+The description and topics below are recommendations until verified in the repository's About settings. Repository file access does not expose a metadata-editing action in the current connected GitHub tools.
 
 ## Suggested GitHub topics
 
-`open-source`, `knowledge-graph`, `knowledge-representation`, `human-computer-interaction`, `reasoning`, `provenance`, `decision-support`, `personal-knowledge-management`, `ai-tools`, `world-models`
+Use this focused set to describe the project's current direction without implying features are already implemented:
 
-Use only topics that accurately describe the code as it evolves. Remove topics that do not match the implemented project.
+`artificial-intelligence`, `knowledge-graph`, `knowledge-representation`, `explainable-ai`, `decision-support`, `world-models`, `data-provenance`, `uncertainty`, `human-centered-ai`, `open-source`
 
-## Settings to review after creation
+Review topics as the code evolves and remove any that no longer describe the repository accurately.
 
-1. Enable Issues and Discussions if maintainers can moderate them.
+## Settings to review
+
+1. Enable Issues and Discussions only if maintainers can moderate them.
 2. Add a `good first issue` label and keep issues focused and reproducible.
 3. Enable private vulnerability reporting if available.
-4. Set the community health files from this bundle as the repository defaults.
+4. Confirm community health files are visible and linked.
 5. Protect `main` once contributors and CI are active; require review and passing checks appropriate to the project's size.
-6. Keep Actions permissions minimal; review third-party actions before adding them.
-7. Add maintainers and a private security contact before inviting a wider community.
-8. Add a social preview image and project website only when real assets exist.
+6. Keep Actions permissions minimal and review third-party actions before adding them.
+7. Add a security contact before inviting a wider community.
+8. Add a social preview image or website only when the asset or destination is real.
 9. Confirm license ownership and contribution expectations before accepting external contributions.
 
 ## Important
 
-This file is a setup guide. It does not mean the repository settings or topics have already been applied on GitHub.
+This checklist documents intended settings. It does not mean repository description, topics, branch protection, or vulnerability reporting have been applied.
