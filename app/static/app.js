@@ -70,9 +70,14 @@ function render() {
     const controls = document.createElement("div");
     controls.className = "review-controls";
     controls.append(button("Edit", "button button-small", () => editStatement(statement)));
-    controls.append(button("Delete", "button button-small", () => runAction(async () => {
-      model = await request(`/api/statements/${encodeURIComponent(statement.id)}`, { method: "DELETE" });
-    }).then(() => refreshModel())));
+    controls.append(button("Delete", "button button-small", () => {
+      if (!window.confirm("Delete this statement? Evidence-linked statements must be unlinked from hypotheses first.")) return;
+      runAction(async () => {
+        await request(`/api/statements/${encodeURIComponent(statement.id)}`, { method: "DELETE" });
+        model = await request("/api/model");
+        render();
+      });
+    }));
     item.append(controls);
     statementList.append(item);
     const option = document.createElement("option");
