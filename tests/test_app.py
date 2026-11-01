@@ -310,9 +310,8 @@ def test_duplicate_evidence_links_are_rejected_on_update_and_import(tmp_path, mo
 
     invalid_import = client.put(
         "/api/import",
-        files=(
-            "upload",
-            (
+        files={
+            "upload": (
                 "duplicate-evidence.json",
                 json.dumps(
                     {
@@ -328,8 +327,8 @@ def test_duplicate_evidence_links_are_rejected_on_update_and_import(tmp_path, mo
                     }
                 ),
                 "application/json",
-            ),
-        ),
+            )
+        },
     )
     assert invalid_import.status_code == 422
     assert client.get("/api/model").json()["title"] == "Untitled project"
