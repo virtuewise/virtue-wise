@@ -7,7 +7,7 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException, Response, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from app import store
 from app.models import Hypothesis, ProjectModel, Scenario, Statement, now_utc
@@ -48,6 +48,15 @@ app = FastAPI(
     version="0.2.0",
     lifespan=lifespan,
 )
+def save_validated_model(model: ProjectModel) -> ProjectModel:
+    """Revalidate mutable model state before persisting it."""
+    try:
+        validated = ProjectModel.model_validate(model.model_dump(mode="python"))
+    except ValidationError as exc:
+        raise HTTPException(status_code=422, detail=f"Invalid model: {exc}") from exc
+    return store.save_model(validated)
+
+
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
@@ -68,7 +77,7 @@ def get_model() -> ProjectModel:
 
 @app.put("/api/model", response_model=ProjectModel)
 def replace_model(model: ProjectModel) -> ProjectModel:
-    return store.save_model(model)
+    return save_validated_model(model)
 
 
 @app.put("/api/import", response_model=ProjectModel)
