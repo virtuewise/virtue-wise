@@ -306,9 +306,7 @@ def test_duplicate_evidence_links_are_rejected_on_update_and_import(tmp_path, mo
         },
     )
     assert invalid_update.status_code == 422
-    assert (
-        client.get("/api/model").json()["hypotheses"][0]["evidence_statement_ids"] == []
-    )
+    assert client.get("/api/model").json()["hypotheses"][0]["evidence_statement_ids"] == []
 
     invalid_import = client.put(
         "/api/import",
@@ -335,4 +333,3 @@ def test_duplicate_evidence_links_are_rejected_on_update_and_import(tmp_path, mo
     )
     assert invalid_import.status_code == 422
     assert client.get("/api/model").json()["title"] == "Untitled project"
-
