@@ -14,53 +14,54 @@ Information is abundant, but context is fragmented. A useful system should help 
 
 VIRTUE WISE is an open-source effort to investigate that foundation. It is not tied to one AI model or provider, and it does not assume a system should make decisions on a person's behalf.
 
-## What we are exploring
+## What is implemented
 
-- **Evidence and provenance** — connect claims to sources, observations, and revisions.
-- **A structured world model** — represent entities, events, relationships, goals, and context.
-- **Explicit uncertainty** — distinguish observed information from hypotheses, inferences, and unknowns.
-- **Scenario exploration** — make assumptions and trade-offs visible when comparing possible actions.
-- **Human correction** — allow people to challenge, revise, or reject the model's suggestions.
-- **Portability and control** — prioritize inspectable data and flexible integrations.
+The current local-first prototype includes:
 
-These are development goals, not a claim that all capabilities are implemented.
+- **Project workspace:** edit a project title and goal.
+- **Statements and provenance:** create, edit, and delete user-provided statements with source labels and optional excerpts.
+- **Hypothesis review:** create and edit hypotheses, link them to statements, set qualitative uncertainty, and accept, revise, or reject with a review note.
+- **Scenario comparison:** create, edit, and delete alternatives with explicit assumptions and expected outcomes; compare them side by side without artificial scores.
+- **Portable data:** export JSON, import a validated model, and delete the saved local model.
+- **Quality checks:** automated API tests and CI for Python 3.12/3.13, Ruff, and Markdown linting.
 
-## First prototype
-
-The first scaffold provides a runnable FastAPI application with a browser interface, a versioned Pydantic model, local SQLite persistence, statement provenance, hypothesis review, JSON export, and deletion.
-
-Initial workflow:
-
-1. Enter a goal and user-provided statements.
-2. Record source labels and optional excerpts.
-3. Create a hypothesis and link it to evidence statements.
-4. Review it as accepted, revised, or rejected without overwriting source statements.
-5. Export the model as JSON or delete the local model.
-
-Scenarios have a schema representation but are not yet editable in the interface. JSON import, migrations, authentication, and multi-user operation are not implemented. See the [prototype plan](docs/PROTOTYPE.md) and [architecture notes](docs/ARCHITECTURE.md).
+These are prototype capabilities, not claims of validated prediction or professional advice.
 
 ## Run locally
 
 Requirements: Python 3.12 or newer.
 
-Create a virtual environment, activate it, then run:
-
-    python -m pip install -e ".[dev]"
-    uvicorn app.main:app --reload
+```bash
+python -m venv .venv
+# macOS/Linux
+source .venv/bin/activate
+# Windows PowerShell: .venv\\Scripts\\Activate.ps1
+python -m pip install -e ".[dev]"
+uvicorn app.main:app --reload
+```
 
 Open <http://127.0.0.1:8000>. API documentation is available at <http://127.0.0.1:8000/docs>.
 
-By default, SQLite data is stored at data/virtue-wise.sqlite3. Set VIRTUE_WISE_DB to use another path. Keep the server bound to localhost and do not enter sensitive data; the prototype does not provide authentication or encryption at rest.
+By default, SQLite data is stored at `data/virtue-wise.sqlite3`. Set `VIRTUE_WISE_DB` to use another path. The application has no authentication or encryption at rest: keep it bound to localhost and do not enter sensitive data.
 
 Run quality checks:
 
-    ruff check app tests
-    ruff format --check app tests
-    pytest
+```bash
+ruff check app tests
+ruff format --check app tests
+pytest
+```
 
-## Current status
+## Known limitations
 
-**Stage: early runnable prototype scaffold.** Core model, local persistence, a small UI, API endpoints, and initial tests are in place. The architecture and data format remain provisional until evaluated through real use. Scenario comparison, JSON import, migrations, and broader evaluation remain future work.
+- Single local model and single-process storage; no multi-user operation or concurrency coordination.
+- No authentication, encryption at rest, CSRF protection, or production deployment hardening.
+- JSON import supports the current schema version only; migrations are not implemented.
+- Scenario comparison is qualitative, not a prediction engine.
+- Edit dialogs are basic native browser prompts.
+- Manual accessibility and end-to-end acceptance reviews remain to be completed.
+
+See [the architecture notes](docs/ARCHITECTURE.md), [prototype specification](docs/PROTOTYPE.md), and [roadmap](ROADMAP.md) for detail.
 
 ## Project identity
 
@@ -82,7 +83,7 @@ Contributions are welcome across engineering, research, product design, accessib
 | --- | --- |
 | [Vision](docs/VISION.md) | Motivation and foundational ideas |
 | [Prototype plan](docs/PROTOTYPE.md) | Scope, technical choices, acceptance criteria |
-| [Architecture](docs/ARCHITECTURE.md) | Implemented structure and known limitations |
+| [Architecture](docs/ARCHITECTURE.md) | Implementation, boundaries, and known limitations |
 | [Brand guide](docs/BRAND.md) | Visual identity and documentation standards |
 | [Roadmap](ROADMAP.md) | Proposed milestones |
 | [Contributing](CONTRIBUTING.md) | Contribution workflow |
