@@ -23,7 +23,7 @@ VIRTUE WISE is a single-process FastAPI application serving a static HTML/CSS/Ja
 
 ## Data and trust boundaries
 
-Statements represent user-provided inputs. Hypotheses remain separate records with explicit uncertainty and review status. Review decisions do not promote hypotheses into verified facts or alter source statements. Imported models must use the supported schema version, unique record IDs, and valid evidence references.
+Statements represent user-provided inputs. Hypotheses remain separate records with explicit uncertainty and review status. Review decisions do not promote hypotheses into verified facts or alter source statements. Editing a linked statement or materially changing a hypothesis resets that hypothesis to proposed and clears its prior review note, so an earlier decision is not silently carried over to changed content. Imported models must use the supported schema version, unique record IDs, and valid evidence references.
 
 The application does not call an external model, send telemetry, connect to user accounts, or perform external actions. The SQLite file is local to the server process by default at `data/virtue-wise.sqlite3`. Anyone with access to that machine and file may be able to read its contents; this is not an encrypted vault or multi-user security boundary.
 

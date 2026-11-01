@@ -104,8 +104,19 @@ def update_statement(statement_id: str, statement: Statement) -> ProjectModel:
         raise HTTPException(status_code=404, detail="Statement not found.")
     if statement.id != statement_id:
         raise HTTPException(status_code=422, detail="Statement ID cannot be changed.")
-    statement.created_at = model.statements[index].created_at
+    previous = model.statements[index]
+    statement.created_at = previous.created_at
+    changed = any(
+        getattr(previous, field) != getattr(statement, field)
+        for field in ("text", "source_label", "source_excerpt")
+    )
     model.statements[index] = statement
+    if changed:
+        for hypothesis in model.hypotheses:
+            if statement_id in hypothesis.evidence_statement_ids:
+                hypothesis.review_status = "proposed"
+                hypothesis.review_note = ""
+                hypothesis.reviewed_at = None
     return store.save_model(model)
 
 
@@ -150,10 +161,22 @@ def update_hypothesis(hypothesis_id: str, update: HypothesisUpdate) -> ProjectMo
     known_ids = {statement.id for statement in model.statements}
     if set(update.evidence_statement_ids) - known_ids:
         raise HTTPException(status_code=422, detail="Evidence must reference existing statements.")
+    changed = any(
+        (
+            hypothesis.claim != update.claim,
+            hypothesis.rationale != update.rationale,
+            hypothesis.evidence_statement_ids != update.evidence_statement_ids,
+            hypothesis.uncertainty != update.uncertainty,
+        )
+    )
     hypothesis.claim = update.claim
     hypothesis.rationale = update.rationale
     hypothesis.evidence_statement_ids = update.evidence_statement_ids
     hypothesis.uncertainty = update.uncertainty
+    if changed:
+        hypothesis.review_status = "proposed"
+        hypothesis.review_note = ""
+        hypothesis.reviewed_at = None
     return store.save_model(model)
 
 
