@@ -6,7 +6,7 @@ VIRTUE WISE explores ways to help people connect information, understand the bas
 
 > **Core idea:** move beyond answers alone toward understanding that can be examined, corrected, and used.
 
-[Vision](docs/VISION.md) · [Prototype plan](docs/PROTOTYPE.md) · [Architecture](docs/ARCHITECTURE.md) · [Roadmap](ROADMAP.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
+[Vision](docs/VISION.md) · [Prototype plan](docs/PROTOTYPE.md) · [Architecture](docs/ARCHITECTURE.md) · [Acceptance walkthrough](docs/ACCEPTANCE.md) · [Roadmap](ROADMAP.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
 
 ## Why this project
 
@@ -61,7 +61,7 @@ pytest
 - Edit dialogs are basic native browser prompts.
 - Manual accessibility and end-to-end acceptance reviews remain to be completed.
 
-See [the architecture notes](docs/ARCHITECTURE.md), [prototype specification](docs/PROTOTYPE.md), and [roadmap](ROADMAP.md) for detail.
+Try the fictional [demo model](examples/demo-project.json) and follow the [manual acceptance walkthrough](docs/ACCEPTANCE.md). See [architecture notes](docs/ARCHITECTURE.md), the [prototype specification](docs/PROTOTYPE.md), and [roadmap](ROADMAP.md) for detail.
 
 ## Project identity
 
@@ -84,6 +84,7 @@ Contributions are welcome across engineering, research, product design, accessib
 | [Vision](docs/VISION.md) | Motivation and foundational ideas |
 | [Prototype plan](docs/PROTOTYPE.md) | Scope, technical choices, acceptance criteria |
 | [Architecture](docs/ARCHITECTURE.md) | Implementation, boundaries, and known limitations |
+| [Acceptance walkthrough](docs/ACCEPTANCE.md) | Manual workflow and accessibility checklist |
 | [Brand guide](docs/BRAND.md) | Visual identity and documentation standards |
 | [Roadmap](ROADMAP.md) | Proposed milestones |
 | [Contributing](CONTRIBUTING.md) | Contribution workflow |

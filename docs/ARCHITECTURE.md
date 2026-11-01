@@ -8,7 +8,9 @@ VIRTUE WISE is a single-process FastAPI application serving a static HTML/CSS/Ja
 - `app/store.py` owns SQLite persistence.
 - `app/main.py` exposes the interface, health endpoint, model API, record editing, hypothesis review, scenario operations, JSON import/export, and deletion.
 - `app/static/` contains the browser interface and interaction logic.
-- `tests/` exercises API behavior, provenance rules, scenario operations, and import validation.
+- `tests/` exercises API behavior, provenance rules, scenario operations, import validation, and the documented demo fixture.
+- `examples/demo-project.json` provides a fictional model for local exploration and acceptance testing.
+- `docs/ACCEPTANCE.md` defines a manual workflow and accessibility checklist; those manual checks remain to be performed.
 
 ## Implemented workflows
 

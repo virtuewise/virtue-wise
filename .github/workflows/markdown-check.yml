@@ -24,7 +24,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for file in README.md LICENSE CONTRIBUTING.md CODE_OF_CONDUCT.md SECURITY.md ROADMAP.md REPOSITORY_SETUP.md docs/VISION.md docs/PROTOTYPE.md docs/BRAND.md docs/ARCHITECTURE.md assets/virtue-wise-mark.svg pyproject.toml app/main.py app/models.py app/store.py app/static/index.html app/static/app.js app/static/styles.css tests/test_app.py; do
+          for file in README.md LICENSE CONTRIBUTING.md CODE_OF_CONDUCT.md SECURITY.md ROADMAP.md REPOSITORY_SETUP.md docs/VISION.md docs/PROTOTYPE.md docs/BRAND.md docs/ARCHITECTURE.md docs/ACCEPTANCE.md examples/demo-project.json assets/virtue-wise-mark.svg pyproject.toml app/main.py app/models.py app/store.py app/static/index.html app/static/app.js app/static/styles.css tests/test_app.py; do
             test -s "$file" || { echo "Missing or empty required file: $file"; exit 1; }
           done
           grep -q 'docs/PROTOTYPE.md' README.md

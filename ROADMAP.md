@@ -41,7 +41,8 @@ This roadmap separates the **first local prototype** from the broader research v
 
 - [x] Represent alternatives with explicit assumptions and expected outcomes
 - [x] Compare scenarios descriptively without fabricated scores or certainty
-- [ ] Test the workflow with a documented, fictional project-planning example
+- [x] Add a documented fictional project-planning example and automated import test
+- [ ] Manually test the workflow using the example
 - [ ] Evaluate whether the comparison helps users make better-informed choices
 
 ## Phase 5 — Broader platform and ecosystem

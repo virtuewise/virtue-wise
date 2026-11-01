@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "id": "demo-project-001",
+  "title": "Improve a small team planning cycle",
+  "goal": "Explore whether a smaller weekly task list helps a fictional team finish work with less carry-over.",
+  "statements": [
+    {
+      "id": "demo-statement-001",
+      "text": "The fictional team carried three unfinished tasks into the last weekly review.",
+      "source_label": "Fictional weekly review",
+      "source_excerpt": "Three tasks remain open at the end of the week."
+    },
+    {
+      "id": "demo-statement-002",
+      "text": "The team selected eight active tasks at the start of that week.",
+      "source_label": "Fictional planning board",
+      "source_excerpt": "Eight tasks were marked active on Monday."
+    },
+    {
+      "id": "demo-statement-003",
+      "text": "The team has not yet compared a smaller task list over multiple weeks.",
+      "source_label": "Fictional project note",
+      "source_excerpt": "No repeated comparison has been run."
+    }
+  ],
+  "hypotheses": [
+    {
+      "id": "demo-hypothesis-001",
+      "claim": "Reducing the number of active tasks may reduce unfinished work.",
+      "rationale": "The example shows carry-over alongside a relatively large active list, but one week does not establish a cause.",
+      "evidence_statement_ids": [
+        "demo-statement-001",
+        "demo-statement-002",
+        "demo-statement-003"
+      ],
+      "uncertainty": "tentative",
+      "review_status": "proposed",
+      "review_note": "",
+      "reviewed_at": null
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "demo-scenario-001",
+      "name": "Limit active work to five tasks",
+      "assumptions": [
+        "The team can defer lower-priority tasks.",
+        "Urgent work does not increase sharply."
+      ],
+      "expected_outcome": "May improve focus and expose capacity constraints; some requests will wait longer."
+    },
+    {
+      "id": "demo-scenario-002",
+      "name": "Keep eight active tasks",
+      "assumptions": [
+        "Context switching remains manageable.",
+        "The team can handle current demand."
+      ],
+      "expected_outcome": "Preserves flexibility, but unfinished work may continue if capacity is unchanged."
+    }
+  ]
+}
