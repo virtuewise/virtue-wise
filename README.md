@@ -30,6 +30,7 @@ These are development goals, not a claim that all capabilities are implemented.
 The first scaffold provides a runnable FastAPI application with a browser interface, a versioned Pydantic model, local SQLite persistence, statement provenance, hypothesis review, JSON export, and deletion.
 
 Initial workflow:
+
 1. Enter a goal and user-provided statements.
 2. Record source labels and optional excerpts.
 3. Create a hypothesis and link it to evidence statements.
@@ -47,7 +48,7 @@ Create a virtual environment, activate it, then run:
     python -m pip install -e ".[dev]"
     uvicorn app.main:app --reload
 
-Open http://127.0.0.1:8000. API documentation is available at http://127.0.0.1:8000/docs.
+Open <http://127.0.0.1:8000>. API documentation is available at <http://127.0.0.1:8000/docs>.
 
 By default, SQLite data is stored at data/virtue-wise.sqlite3. Set VIRTUE_WISE_DB to use another path. Keep the server bound to localhost and do not enter sensitive data; the prototype does not provide authentication or encryption at rest.
 
