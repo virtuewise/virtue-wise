@@ -6,7 +6,7 @@ VIRTUE WISE explores ways to help people connect information, understand the bas
 
 > **Core idea:** move beyond answers alone toward understanding that can be examined, corrected, and used.
 
-[Vision](docs/VISION.md) · [Roadmap](ROADMAP.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
+[Vision](docs/VISION.md) · [Prototype plan](docs/PROTOTYPE.md) · [Roadmap](ROADMAP.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
 
 ---
 
@@ -37,31 +37,35 @@ These are research and development goals, not a claim that all capabilities are 
 6. **Evidence-led development:** test small, useful workflows before expanding scope.
 7. **Open collaboration:** document assumptions, evaluate prior work, and publish limitations clearly.
 
-## Initial milestone
+## First prototype
 
-The first intended prototype will test a focused end-to-end workflow:
+The initial proof is a small, local-first project-planning scenario using fictional or non-sensitive data. It will focus on one end-to-end workflow:
 
-1. A person enters a goal and a small set of facts or events.
-2. The system builds an editable representation with source references.
-3. It proposes a possible connection and explains the supporting evidence and uncertainty.
-4. The person can correct or reject that proposal.
-5. The person can compare a small number of alternatives under explicit assumptions.
+1. Enter a goal and a few facts or events.
+2. Build an editable representation with source references.
+3. Inspect a candidate connection and its evidence and uncertainty.
+4. Accept, revise, or reject the hypothesis without overwriting source statements.
+5. Compare alternatives under explicit assumptions.
+6. Export the model as JSON and delete local data.
 
-The milestone is a testable prototype—not a promise of a complete personal intelligence platform.
+The proposed technical choices are Python, FastAPI, Pydantic, SQLite, a small HTML/CSS/JavaScript interface, pytest, and Ruff. The stack and acceptance criteria are documented in [the prototype plan](docs/PROTOTYPE.md). This is a plan; the application is not yet implemented.
 
 ## Current status
 
-**Stage: concept and prototype planning.**
+**Stage: prototype specification.**
 
-The architecture, APIs, and implementation choices are not yet stable. This repository is being organized around a clear vision, responsible contribution practices, and a staged roadmap. Working development instructions will be added when the runtime and tooling are selected; placeholder commands will not be presented as functional setup steps.
+The project has a documented vision, proposed initial scope, contribution process, and repository checks. The architecture and data format remain provisional until validated through implementation and evaluation. See the [roadmap](ROADMAP.md) for sequencing.
 
-See the [vision](docs/VISION.md) for the longer-term rationale and the [roadmap](ROADMAP.md) for planned milestones.
+## Project identity
+
+The connected-node mark and usage guidance are maintained in [docs/BRAND.md](docs/BRAND.md) and [assets/virtue-wise-mark.svg](assets/virtue-wise-mark.svg). The identity emphasizes clarity, evidence, and human agency rather than unsupported AI claims.
 
 ## Contributing
 
 Contributions are welcome across engineering, research, product design, accessibility, testing, documentation, and security.
 
 - Start with [CONTRIBUTING.md](CONTRIBUTING.md).
+- Read the [prototype plan](docs/PROTOTYPE.md) before proposing implementation choices.
 - Check the [roadmap](ROADMAP.md) before proposing substantial work.
 - Use the repository's issue templates to report a bug or suggest an improvement.
 - For security-sensitive reports, follow [SECURITY.md](SECURITY.md).
@@ -73,6 +77,8 @@ For significant architectural changes, please open an issue for discussion befor
 | Document | Purpose |
 | --- | --- |
 | [Vision](docs/VISION.md) | Motivation, intended direction, and foundational ideas |
+| [Prototype plan](docs/PROTOTYPE.md) | Initial scope, technical choices, and acceptance criteria |
+| [Brand guide](docs/BRAND.md) | Visual identity and documentation standards |
 | [Roadmap](ROADMAP.md) | Proposed milestones and sequencing |
 | [Contributing](CONTRIBUTING.md) | Contribution workflow and expectations |
 | [Code of Conduct](CODE_OF_CONDUCT.md) | Community standards |
