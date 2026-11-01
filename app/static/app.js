@@ -214,58 +214,134 @@ function renderScenarios() {
     : "Add at least two scenarios to compare their assumptions and expected outcomes side by side.";
 }
 
-async function editStatement(statement) {
-  const text = window.prompt("Statement text", statement.text);
-  if (text === null) return;
-  const sourceLabel = window.prompt("Source label", statement.source_label);
-  if (sourceLabel === null) return;
-  const excerpt = window.prompt("Source excerpt (optional)", statement.source_excerpt || "");
-  if (excerpt === null) return;
-  await runAction(async () => {
-    model = await request(`/api/statements/${encodeURIComponent(statement.id)}`, {
-      method: "PUT",
-      body: JSON.stringify({ ...statement, text, source_label: sourceLabel, source_excerpt: excerpt || null }),
-    });
-    render();
+function openEditor(kind, item) {
+  const definitions = {
+    statement: {
+      title: "Edit statement",
+      fields: [
+        { key: "text", label: "Statement text", multiline: true, required: true, maxLength: 2000 },
+        { key: "source_label", label: "Source label", required: true, maxLength: 300 },
+        { key: "source_excerpt", label: "Source excerpt (optional)", multiline: true, maxLength: 2000 },
+      ],
+      save: (values) => request(`/api/statements/${encodeURIComponent(item.id)}`, {
+        method: "PUT",
+        body: JSON.stringify({ ...item, ...values, source_excerpt: values.source_excerpt || null }),
+      }),
+    },
+    hypothesis: {
+      title: "Edit hypothesis",
+      fields: [
+        { key: "claim", label: "Hypothesis", multiline: true, required: true, maxLength: 2000 },
+        { key: "rationale", label: "Rationale and limitations", multiline: true, maxLength: 2000 },
+        { key: "uncertainty", label: "Uncertainty", options: [
+          ["unknown", "Unknown"], ["tentative", "Tentative"], ["supported", "Supported (reason documented)"],
+        ] },
+      ],
+      save: (values) => request(`/api/hypotheses/${encodeURIComponent(item.id)}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          claim: values.claim,
+          rationale: values.rationale,
+          uncertainty: values.uncertainty,
+          evidence_statement_ids: item.evidence_statement_ids,
+        }),
+      }),
+    },
+    scenario: {
+      title: "Edit scenario",
+      fields: [
+        { key: "name", label: "Scenario name", required: true, maxLength: 200 },
+        { key: "assumptions", label: "Assumptions (one per line)", multiline: true, maxLength: 10000,
+          value: item.assumptions.join("\n") },
+        { key: "expected_outcome", label: "Expected outcome and trade-offs", multiline: true, maxLength: 2000 },
+      ],
+      save: (values) => request(`/api/scenarios/${encodeURIComponent(item.id)}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          name: values.name,
+          assumptions: values.assumptions.split("\n").map((value) => value.trim()).filter(Boolean),
+          expected_outcome: values.expected_outcome,
+        }),
+      }),
+    },
+  };
+  const definition = definitions[kind];
+  const dialog = document.createElement("dialog");
+  dialog.className = "editor-dialog";
+  dialog.setAttribute("aria-labelledby", "editor-dialog-title");
+  const form = document.createElement("form");
+  form.className = "stack editor-form";
+  const heading = document.createElement("h2");
+  heading.id = "editor-dialog-title";
+  heading.textContent = definition.title;
+  form.append(heading);
+  const controls = [];
+  definition.fields.forEach((field) => {
+    const label = document.createElement("label");
+    const control = field.options ? document.createElement("select")
+      : field.multiline ? document.createElement("textarea") : document.createElement("input");
+    const controlId = `editor-${field.key}`;
+    label.htmlFor = controlId;
+    label.textContent = field.label;
+    control.id = controlId;
+    control.name = field.key;
+    if (field.options) {
+      field.options.forEach(([value, text]) => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = text;
+        control.append(option);
+      });
+    } else {
+      control.maxLength = field.maxLength;
+      if (field.multiline) control.rows = 4;
+      if (field.required) control.required = true;
+    }
+    const value = field.value ?? item[field.key] ?? "";
+    control.value = value ?? "";
+    form.append(label, control);
+    controls.push([field.key, control]);
   });
+  const actions = document.createElement("div");
+  actions.className = "review-controls editor-actions";
+  const cancel = button("Cancel", "button button-small", () => dialog.close());
+  cancel.value = "cancel";
+  const save = document.createElement("button");
+  save.type = "submit";
+  save.className = "button button-primary";
+  save.textContent = "Save changes";
+  actions.append(cancel, save);
+  form.append(actions);
+  dialog.append(form);
+  document.body.append(dialog);
+  dialog.addEventListener("close", () => dialog.remove(), { once: true });
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!form.reportValidity()) return;
+    const values = Object.fromEntries(controls.map(([key, control]) => [key, control.value.trim()]));
+    save.disabled = true;
+    save.textContent = "Saving…";
+    try {
+      model = await definition.save(values);
+      dialog.close();
+      render();
+      announce("Changes saved. Review status may have returned to proposed.");
+    } catch (error) {
+      announce(error.message || "Could not save changes.", true);
+      save.disabled = false;
+      save.textContent = "Save changes";
+    }
+  });
+  dialog.addEventListener("click", (event) => {
+    if (event.target === dialog) dialog.close();
+  });
+  dialog.showModal();
+  controls[0]?.[1].focus();
 }
 
-async function editHypothesis(hypothesis) {
-  const claim = window.prompt("Hypothesis", hypothesis.claim);
-  if (claim === null) return;
-  const rationale = window.prompt("Rationale", hypothesis.rationale);
-  if (rationale === null) return;
-  const uncertainty = window.prompt("Uncertainty: unknown, tentative, or supported", hypothesis.uncertainty);
-  if (uncertainty === null) return;
-  await runAction(async () => {
-    model = await request(`/api/hypotheses/${encodeURIComponent(hypothesis.id)}`, {
-      method: "PUT",
-      body: JSON.stringify({
-        claim, rationale, evidence_statement_ids: hypothesis.evidence_statement_ids, uncertainty,
-      }),
-    });
-    render();
-  });
-}
-
-async function editScenario(scenario) {
-  const name = window.prompt("Scenario name", scenario.name);
-  if (name === null) return;
-  const assumptions = window.prompt("Assumptions (one per line)", scenario.assumptions.join("\n"));
-  if (assumptions === null) return;
-  const outcome = window.prompt("Expected outcome and trade-offs", scenario.expected_outcome);
-  if (outcome === null) return;
-  await runAction(async () => {
-    model = await request(`/api/scenarios/${encodeURIComponent(scenario.id)}`, {
-      method: "PUT",
-      body: JSON.stringify({
-        name, assumptions: assumptions.split("\n").map((item) => item.trim()).filter(Boolean),
-        expected_outcome: outcome,
-      }),
-    });
-    render();
-  });
-}
+function editStatement(statement) { openEditor("statement", statement); }
+function editHypothesis(hypothesis) { openEditor("hypothesis", hypothesis); }
+function editScenario(scenario) { openEditor("scenario", scenario); }
 
 byId("project-form").addEventListener("submit", (event) => {
   event.preventDefault();
