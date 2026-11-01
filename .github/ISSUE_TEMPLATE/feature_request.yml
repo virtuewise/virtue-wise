@@ -1,0 +1,29 @@
+name: Feature proposal
+description: Propose a focused feature or research direction.
+title: "proposal: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+      description: Who experiences this problem, and in what situation?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed approach
+      description: Describe the smallest useful change.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives and prior art
+      description: What simpler approaches or existing tools did you consider?
+  - type: textarea
+    id: risks
+    attributes:
+      label: Risks, assumptions, and evaluation
+      description: How could this fail, and how would we know it works?
