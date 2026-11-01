@@ -48,5 +48,5 @@ Open <http://127.0.0.1:8000>. API documentation is available at <http://127.0.0.
 - Scenarios are qualitative; the application does not estimate probabilities, causal effects, or future outcomes.
 - JSON import supports the current schema version only; there is no migration tooling.
 - There is no authentication, encryption-at-rest layer, backup manager, CSRF protection, or concurrency coordination for multiple application workers.
-- Browser edit dialogs use native prompts and are intentionally minimal.
+- Editing uses native HTML dialog forms with associated labels, required-field validation, save/cancel controls, and visible save-error feedback. Manual keyboard and screen-reader verification remains outstanding.
 - The server should be bound to localhost. Do not expose it to an untrusted network or enter sensitive data.
