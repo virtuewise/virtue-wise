@@ -163,7 +163,10 @@ def test_json_import_validates_before_replacing_model(tmp_path, monkeypatch):
 
 def test_import_rejects_dangling_evidence_and_oversized_upload(tmp_path, monkeypatch):
     client = test_client(tmp_path, monkeypatch)
-    payload = {"schema_version": 1, "hypotheses": [{"claim": "Broken link", "evidence_statement_ids": ["absent"]}]}
+    payload = {
+        "schema_version": 1,
+        "hypotheses": [{"claim": "Broken link", "evidence_statement_ids": ["absent"]}],
+    }
     invalid = client.put(
         "/api/import",
         files={"upload": ("model.json", json.dumps(payload), "application/json")},
