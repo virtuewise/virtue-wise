@@ -48,6 +48,8 @@ app = FastAPI(
     version="0.2.0",
     lifespan=lifespan,
 )
+
+
 def save_validated_model(model: ProjectModel) -> ProjectModel:
     """Revalidate mutable model state before persisting it."""
     try:
