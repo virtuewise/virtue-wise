@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">VIRTUE WISE connected-node mark</title>
+  <desc id="desc">A central teal node connected to three outer nodes inside a rounded dark frame.</desc>
+  <rect x="8" y="8" width="240" height="240" rx="48" fill="#17212B"/>
+  <g fill="none" stroke="#39A7A0" stroke-linecap="round" stroke-width="9">
+    <path d="M128 128 73 77"/>
+    <path d="M128 128 184 77"/>
+    <path d="M128 128 128 190"/>
+  </g>
+  <circle cx="73" cy="77" r="17" fill="#F6F4EF"/>
+  <circle cx="184" cy="77" r="17" fill="#F6F4EF"/>
+  <circle cx="128" cy="190" r="17" fill="#F6F4EF"/>
+  <circle cx="128" cy="128" r="25" fill="#176B68" stroke="#39A7A0" stroke-width="6"/>
+  <circle cx="128" cy="128" r="7" fill="#FFFFFF"/>
+</svg>
