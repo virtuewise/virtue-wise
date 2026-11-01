@@ -265,6 +265,7 @@ def test_store_round_trip(tmp_path, monkeypatch):
     assert restored.id == model.id
     assert restored.schema_version == 1
 
+
 def test_duplicate_evidence_links_are_rejected_without_corrupting_saved_model(
     tmp_path, monkeypatch
 ):
