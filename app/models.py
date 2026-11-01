@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from typing import Literal
 from uuid import uuid4
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 def now_utc() -> datetime:
@@ -44,7 +44,7 @@ class Hypothesis(StrictModel):
 
 
 class Scenario(StrictModel):
-    """A simple alternative with explicit assumptions for later comparison."""
+    """A named alternative with explicit assumptions for comparison."""
 
     id: str = Field(default_factory=lambda: str(uuid4()))
     name: str = Field(min_length=1, max_length=200)
@@ -64,3 +64,22 @@ class ProjectModel(StrictModel):
     scenarios: list[Scenario] = Field(default_factory=list, max_length=100)
     created_at: datetime = Field(default_factory=now_utc)
     updated_at: datetime = Field(default_factory=now_utc)
+
+    @model_validator(mode="after")
+    def validate_references_and_identifiers(self) -> "ProjectModel":
+        """Reject duplicate IDs and dangling evidence references on every model boundary."""
+        for collection_name in ("statements", "hypotheses", "scenarios"):
+            records = getattr(self, collection_name)
+            identifiers = [record.id for record in records]
+            if len(identifiers) != len(set(identifiers)):
+                raise ValueError(f"{collection_name} must have unique IDs.")
+
+        statement_ids = {statement.id for statement in self.statements}
+        for hypothesis in self.hypotheses:
+            if len(hypothesis.evidence_statement_ids) != len(
+                set(hypothesis.evidence_statement_ids)
+            ):
+                raise ValueError("Hypothesis evidence links must be unique.")
+            if set(hypothesis.evidence_statement_ids) - statement_ids:
+                raise ValueError("Hypotheses may only reference existing statements.")
+        return self

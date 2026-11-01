@@ -1,4 +1,4 @@
-"""Behavioral tests for the first prototype API."""
+"""Behavioral tests for the VIRTUE WISE prototype API."""
 
 import json
 
@@ -50,6 +50,37 @@ def test_statement_and_hypothesis_provenance(tmp_path, monkeypatch):
     assert hypothesis["review_status"] == "proposed"
 
 
+def test_statement_edit_and_delete_guards(tmp_path, monkeypatch):
+    client = test_client(tmp_path, monkeypatch)
+    created = client.post("/api/statements", json={"text": "Original statement"})
+    statement = created.json()["statements"][0]
+    edited = client.put(
+        f"/api/statements/{statement['id']}",
+        json={**statement, "text": "Corrected statement"},
+    )
+    assert edited.status_code == 200
+    assert edited.json()["statements"][0]["text"] == "Corrected statement"
+
+    hypothesis = client.post(
+        "/api/hypotheses",
+        json={"claim": "A possibility", "evidence_statement_ids": [statement["id"]]},
+    ).json()["hypotheses"][0]
+    blocked = client.delete(f"/api/statements/{statement['id']}")
+    assert blocked.status_code == 409
+
+    client.put(
+        f"/api/hypotheses/{hypothesis['id']}",
+        json={
+            "claim": hypothesis["claim"],
+            "rationale": "",
+            "evidence_statement_ids": [],
+            "uncertainty": "unknown",
+        },
+    )
+    assert client.delete(f"/api/statements/{statement['id']}").status_code == 204
+    assert client.delete(f"/api/statements/{statement['id']}").status_code == 404
+
+
 def test_review_transition_does_not_change_statements(tmp_path, monkeypatch):
     client = test_client(tmp_path, monkeypatch)
     client.post("/api/statements", json={"text": "A user-provided observation"})
@@ -63,6 +94,89 @@ def test_review_transition_does_not_change_statements(tmp_path, monkeypatch):
     assert response.json()["hypotheses"][0]["review_status"] == "revised"
     assert response.json()["hypotheses"][0]["review_note"] == "Needs another example."
     assert response.json()["statements"][0]["text"] == "A user-provided observation"
+
+
+def test_scenario_create_update_delete_and_compare(tmp_path, monkeypatch):
+    client = test_client(tmp_path, monkeypatch)
+    first = client.post(
+        "/api/scenarios",
+        json={
+            "name": "Reduce scope",
+            "assumptions": ["One owner is available"],
+            "expected_outcome": "Earlier feedback",
+        },
+    )
+    second = client.post(
+        "/api/scenarios",
+        json={"name": "Keep scope", "assumptions": ["Capacity remains stable"]},
+    )
+    assert first.status_code == 201
+    assert second.status_code == 201
+    scenarios = second.json()["scenarios"]
+    scenario_id = scenarios[0]["id"]
+    edited = client.put(
+        f"/api/scenarios/{scenario_id}",
+        json={
+            "name": "Reduce scope carefully",
+            "assumptions": ["One owner is available", "Dependencies stay stable"],
+            "expected_outcome": "Earlier feedback",
+        },
+    )
+    assert edited.status_code == 200
+    assert len(edited.json()["scenarios"]) == 2
+    assert edited.json()["scenarios"][0]["name"] == "Reduce scope carefully"
+    assert client.delete(f"/api/scenarios/{scenario_id}").status_code == 204
+    assert len(client.get("/api/model").json()["scenarios"]) == 1
+
+
+def test_json_import_validates_before_replacing_model(tmp_path, monkeypatch):
+    client = test_client(tmp_path, monkeypatch)
+    client.put("/api/model", json={"title": "Keep this model"})
+    invalid = client.put(
+        "/api/import",
+        files={"upload": ("invalid.json", b'{"schema_version": 99}', "application/json")},
+    )
+    assert invalid.status_code == 422
+    assert client.get("/api/model").json()["title"] == "Keep this model"
+
+    payload = {
+        "schema_version": 1,
+        "title": "Imported plan",
+        "statements": [{"id": "statement-1", "text": "A sourced note"}],
+        "hypotheses": [
+            {
+                "id": "hypothesis-1",
+                "claim": "A tentative link",
+                "evidence_statement_ids": ["statement-1"],
+            }
+        ],
+        "scenarios": [{"id": "scenario-1", "name": "Option A"}],
+    }
+    imported = client.put(
+        "/api/import",
+        files={"upload": ("model.json", json.dumps(payload), "application/json")},
+    )
+    assert imported.status_code == 200
+    assert imported.json()["title"] == "Imported plan"
+    assert imported.json()["hypotheses"][0]["evidence_statement_ids"] == ["statement-1"]
+
+
+def test_import_rejects_dangling_evidence_and_oversized_upload(tmp_path, monkeypatch):
+    client = test_client(tmp_path, monkeypatch)
+    payload = {
+        "schema_version": 1,
+        "hypotheses": [{"claim": "Broken link", "evidence_statement_ids": ["absent"]}],
+    }
+    invalid = client.put(
+        "/api/import",
+        files={"upload": ("model.json", json.dumps(payload), "application/json")},
+    )
+    assert invalid.status_code == 422
+    oversized = client.put(
+        "/api/import",
+        files={"upload": ("large.json", b" " * 2_000_001, "application/json")},
+    )
+    assert oversized.status_code == 413
 
 
 def test_export_and_delete(tmp_path, monkeypatch):

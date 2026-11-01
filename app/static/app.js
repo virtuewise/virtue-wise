@@ -23,13 +23,22 @@ async function request(url, options = {}) {
   return response.status === 204 ? null : response.json();
 }
 
-async function runAction(action) {
+async function runAction(action, successMessage = "Saved locally.") {
   try {
     await action();
-    announce("Saved locally.");
+    announce(successMessage);
   } catch (error) {
     announce(error.message || "Something went wrong.", true);
   }
+}
+
+function button(label, className, action) {
+  const element = document.createElement("button");
+  element.type = "button";
+  element.className = className;
+  element.textContent = label;
+  element.addEventListener("click", action);
+  return element;
 }
 
 function render() {
@@ -37,6 +46,8 @@ function render() {
   byId("project-goal").value = model.goal;
   byId("statement-count").textContent = model.statements.length;
   byId("hypothesis-count").textContent = model.hypotheses.length;
+  byId("scenario-count").textContent = model.scenarios.length;
+
   const statementList = byId("statement-list");
   statementList.replaceChildren();
   const evidenceSelect = byId("hypothesis-evidence");
@@ -56,12 +67,25 @@ function render() {
       excerpt.textContent = statement.source_excerpt;
       item.append(excerpt);
     }
+    const controls = document.createElement("div");
+    controls.className = "review-controls";
+    controls.append(button("Edit", "button button-small", () => editStatement(statement)));
+    controls.append(button("Delete", "button button-small", () => {
+      if (!window.confirm("Delete this statement? Evidence-linked statements must be unlinked from hypotheses first.")) return;
+      runAction(async () => {
+        await request(`/api/statements/${encodeURIComponent(statement.id)}`, { method: "DELETE" });
+        model = await request("/api/model");
+        render();
+      });
+    }));
+    item.append(controls);
     statementList.append(item);
     const option = document.createElement("option");
     option.value = statement.id;
     option.textContent = `${index + 1}. ${statement.text.slice(0, 90)}`;
     evidenceSelect.append(option);
   });
+
   const hypothesisList = byId("hypothesis-list");
   hypothesisList.replaceChildren();
   model.hypotheses.forEach((hypothesis) => {
@@ -79,26 +103,25 @@ function render() {
       rationale.textContent = hypothesis.rationale;
       item.append(rationale);
     }
+    const editControls = document.createElement("div");
+    editControls.className = "review-controls";
+    editControls.append(button("Edit hypothesis", "button button-small", () => editHypothesis(hypothesis)));
+    item.append(editControls);
     if (hypothesis.review_status === "proposed") {
       const controls = document.createElement("div");
       controls.className = "review-controls";
       const note = document.createElement("input");
       note.maxLength = 2000;
       note.placeholder = "Review note (optional)";
-      note.setAttribute("aria-label", "Review note");
+      note.setAttribute("aria-label", `Review note for ${hypothesis.claim.slice(0, 50)}`);
       controls.append(note);
       [["Accept", "accepted"], ["Revise", "revised"], ["Reject", "rejected"]].forEach(([label, status]) => {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "button button-small";
-        button.textContent = label;
-        button.addEventListener("click", () => runAction(async () => {
+        controls.append(button(label, "button button-small", () => runAction(async () => {
           model = await request(`/api/hypotheses/${encodeURIComponent(hypothesis.id)}/review`, {
             method: "PATCH", body: JSON.stringify({ status, note: note.value }),
           });
           render();
-        }));
-        controls.append(button);
+        })));
       });
       item.append(controls);
     } else if (hypothesis.review_note) {
@@ -108,6 +131,110 @@ function render() {
       item.append(note);
     }
     hypothesisList.append(item);
+  });
+
+  renderScenarios();
+}
+
+function renderScenarios() {
+  const list = byId("scenario-list");
+  list.replaceChildren();
+  model.scenarios.forEach((scenario) => {
+    const card = document.createElement("article");
+    card.className = "scenario-card";
+    const title = document.createElement("h3");
+    title.textContent = scenario.name;
+    const assumptionsTitle = document.createElement("h4");
+    assumptionsTitle.textContent = "Assumptions";
+    const assumptions = document.createElement("ul");
+    scenario.assumptions.forEach((assumption) => {
+      const li = document.createElement("li");
+      li.textContent = assumption;
+      assumptions.append(li);
+    });
+    if (!scenario.assumptions.length) {
+      const li = document.createElement("li");
+      li.textContent = "No assumptions recorded";
+      assumptions.append(li);
+    }
+    const outcomeTitle = document.createElement("h4");
+    outcomeTitle.textContent = "Expected outcome & trade-offs";
+    const outcome = document.createElement("p");
+    outcome.textContent = scenario.expected_outcome || "No outcome recorded yet.";
+    const controls = document.createElement("div");
+    controls.className = "review-controls";
+    controls.append(button("Edit", "button button-small", () => editScenario(scenario)));
+    controls.append(button("Delete", "button button-small", () => {
+      if (!window.confirm(`Delete scenario “${scenario.name}”?`)) return;
+      runAction(async () => {
+        await request(`/api/scenarios/${encodeURIComponent(scenario.id)}`, { method: "DELETE" });
+        model = await request("/api/model");
+        render();
+      });
+    }));
+    card.append(title, assumptionsTitle, assumptions, outcomeTitle, outcome, controls);
+    list.append(card);
+  });
+  byId("scenario-comparison-note").textContent = model.scenarios.length >= 2
+    ? "Compare assumptions and expected outcomes side by side. Differences are descriptive, not scored predictions."
+    : "Add at least two scenarios to compare their assumptions and expected outcomes side by side.";
+}
+
+async function refreshModel() {
+  model = await request("/api/model");
+  render();
+}
+
+async function editStatement(statement) {
+  const text = window.prompt("Statement text", statement.text);
+  if (text === null) return;
+  const sourceLabel = window.prompt("Source label", statement.source_label);
+  if (sourceLabel === null) return;
+  const excerpt = window.prompt("Source excerpt (optional)", statement.source_excerpt || "");
+  if (excerpt === null) return;
+  await runAction(async () => {
+    model = await request(`/api/statements/${encodeURIComponent(statement.id)}`, {
+      method: "PUT",
+      body: JSON.stringify({ ...statement, text, source_label: sourceLabel, source_excerpt: excerpt || null }),
+    });
+    render();
+  });
+}
+
+async function editHypothesis(hypothesis) {
+  const claim = window.prompt("Hypothesis", hypothesis.claim);
+  if (claim === null) return;
+  const rationale = window.prompt("Rationale", hypothesis.rationale);
+  if (rationale === null) return;
+  const uncertainty = window.prompt("Uncertainty: unknown, tentative, or supported", hypothesis.uncertainty);
+  if (uncertainty === null) return;
+  await runAction(async () => {
+    model = await request(`/api/hypotheses/${encodeURIComponent(hypothesis.id)}`, {
+      method: "PUT",
+      body: JSON.stringify({
+        claim, rationale, evidence_statement_ids: hypothesis.evidence_statement_ids, uncertainty,
+      }),
+    });
+    render();
+  });
+}
+
+async function editScenario(scenario) {
+  const name = window.prompt("Scenario name", scenario.name);
+  if (name === null) return;
+  const assumptions = window.prompt("Assumptions (one per line)", scenario.assumptions.join("\n"));
+  if (assumptions === null) return;
+  const outcome = window.prompt("Expected outcome and trade-offs", scenario.expected_outcome);
+  if (outcome === null) return;
+  await runAction(async () => {
+    model = await request(`/api/scenarios/${encodeURIComponent(scenario.id)}`, {
+      method: "PUT",
+      body: JSON.stringify({
+        name, assumptions: assumptions.split("\n").map((item) => item.trim()).filter(Boolean),
+        expected_outcome: outcome,
+      }),
+    });
+    render();
   });
 }
 
@@ -150,18 +277,50 @@ byId("hypothesis-form").addEventListener("submit", (event) => {
   });
 });
 
+byId("scenario-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  runAction(async () => {
+    model = await request("/api/scenarios", { method: "POST", body: JSON.stringify({
+      name: byId("scenario-name").value,
+      assumptions: byId("scenario-assumptions").value.split("\n").map((item) => item.trim()).filter(Boolean),
+      expected_outcome: byId("scenario-outcome").value,
+    }) });
+    byId("scenario-form").reset();
+    render();
+  });
+});
+
+byId("import-file").addEventListener("change", async (event) => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  if (!window.confirm("Importing replaces the current local model. Export a backup first if needed. Continue?")) {
+    event.target.value = "";
+    return;
+  }
+  await runAction(async () => {
+    const form = new FormData();
+    form.append("upload", file);
+    const response = await fetch("/api/import", { method: "PUT", body: form });
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      throw new Error(body.detail || `Import failed (${response.status})`);
+    }
+    model = await response.json();
+    render();
+  }, "JSON model imported and validated.");
+  event.target.value = "";
+});
+
 byId("delete-model").addEventListener("click", () => {
   if (!window.confirm("Delete the saved local model? This cannot be undone unless you exported a copy.")) return;
   runAction(async () => {
     await request("/api/model", { method: "DELETE" });
     model = await request("/api/model");
     render();
-    announce("Local model deleted. A new empty model is ready.");
-  });
+  }, "Local model deleted. A new empty model is ready.");
 });
 
 runAction(async () => {
   model = await request("/api/model");
   render();
-  announce("Ready. Your model is stored locally by this server.");
-});
+}, "Ready. Your model is stored locally by this server.");
