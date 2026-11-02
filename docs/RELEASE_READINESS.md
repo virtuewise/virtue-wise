@@ -30,6 +30,8 @@ There is currently no automatic backup scheduler, retention policy, encrypted ba
 5. If verification succeeds, preserve the original export and import the verified file into the intended instance. Export again after restoration.
 6. If recovery fails, keep the original backup unchanged and investigate using a copy; do not experiment on the only backup.
 
+The automated suite also exercises an export → delete → import restore cycle and verifies that project identity, statement IDs, evidence links, review status, and scenario content survive. This is a regression check, not a substitute for testing a downloaded backup in a disposable clean instance.
+
 For database-level recovery, stop the application and preserve a copy of the database and any SQLite sidecar files before investigation. JSON export/import is the intended portable recovery route for the current prototype. No recovery-time or recovery-point objective is promised.
 
 ## Release checklist
@@ -46,6 +48,12 @@ For database-level recovery, stop the application and preserve a copy of the dat
 - [ ] For any network deployment, obtain explicit approval of security issue #7; ordinary CI passing is not sufficient.
 - [ ] Tag the exact reviewed commit, publish concise release notes including schema/API compatibility, known limitations, backup instructions, and rollback steps.
 - [ ] After release, verify the released artifact/commit and keep the previous known-good version and backup available.
+
+## Concurrency contract (current prototype)
+
+State-changing HTTP requests are serialized by a process-local lock. A request waits up to 10 seconds for the lock and receives HTTP 503 if another mutation remains in progress. SQLite commits each saved project row transactionally. Automated tests issue concurrent statement creates and verify that all updates remain present.
+
+This is deliberately a single-process control. The lock is not shared across Uvicorn workers, processes, hosts, or containers, and there is no revision/ETag compare-and-swap for stale clients. Run one application process only. Multi-worker or multi-instance deployment remains unsupported until a database-backed concurrency protocol and cross-process tests are implemented.
 
 ## Rollback
 
