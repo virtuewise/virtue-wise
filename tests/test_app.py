@@ -358,7 +358,6 @@ def test_record_deletions_preserve_saved_model_when_persistence_fails(tmp_path, 
     assert [item.id for item in saved.scenarios] == [scenario["id"]]
 
 
-
 def test_security_headers_are_present_on_application_responses(tmp_path, monkeypatch):
     client = test_client(tmp_path, monkeypatch)
     response = client.get("/health")
