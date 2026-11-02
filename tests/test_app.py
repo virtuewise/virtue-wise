@@ -539,3 +539,25 @@ def test_concurrent_statement_creates_do_not_lose_updates(tmp_path, monkeypatch)
         assert {item["text"] for item in saved["statements"]} == {
             f"Concurrent statement {index}" for index in range(12)
         }
+
+
+def test_chunked_import_request_without_content_length_is_bounded(tmp_path, monkeypatch):
+    client = test_client(tmp_path, monkeypatch)
+    client.put("/api/model", json={"title": "Preserve this model"})
+    boundary = "virtue-wise-boundary"
+    body = (
+        f"--{boundary}\r\n"
+        'Content-Disposition: form-data; name="upload"; filename="large.json"\r\n'
+        "Content-Type: application/json\r\n\r\n"
+    ).encode() + (b"0" * 2_100_001) + f"\r\n--{boundary}--\r\n".encode()
+    chunks = (body[index:index + 65536] for index in range(0, len(body), 65536))
+    response = client.put(
+        "/api/import",
+        content=chunks,
+        headers={
+            "Content-Type": f"multipart/form-data; boundary={boundary}",
+            "Transfer-Encoding": "chunked",
+        },
+    )
+    assert response.status_code == 413
+    assert client.get("/api/model").json()["title"] == "Preserve this model"
