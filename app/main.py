@@ -5,7 +5,8 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from fastapi import FastAPI, HTTPException, Response, UploadFile
+from fastapi import FastAPI, HTTPException, Request, Response, UploadFile
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
@@ -15,6 +16,23 @@ from app import store
 from app.models import Hypothesis, ProjectModel, Scenario, Statement, now_utc
 
 STATIC_DIR = Path(__file__).parent / "static"
+MAX_IMPORT_BYTES = 2_000_000
+MAX_IMPORT_REQUEST_BYTES = 2_100_000
+
+
+def _unique_json_object(pairs):
+    """Reject ambiguous JSON objects containing duplicate member names."""
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("Duplicate JSON object key.")
+        result[key] = value
+    return result
+
+
+def _reject_json_constant(value):
+    """Reject non-standard NaN and Infinity tokens accepted by Python's JSON parser."""
+    raise ValueError(f"Invalid JSON numeric constant: {value}")
 
 
 class ReviewRequest(BaseModel):
@@ -90,6 +108,26 @@ def _same_origin(source: str, request, *, is_referer: bool = False) -> bool:
 
 
 @app.middleware("http")
+async def limit_import_request_size(request, call_next):
+    """Reject declared oversized multipart requests before FastAPI parses the upload."""
+    if request.method == "PUT" and request.url.path == "/api/import":
+        content_length = request.headers.get("content-length")
+        if content_length is not None:
+            try:
+                request_size = int(content_length)
+            except ValueError:
+                return JSONResponse(status_code=400, content={"detail": "Invalid request size."})
+            if request_size < 0:
+                return JSONResponse(status_code=400, content={"detail": "Invalid request size."})
+            if request_size > MAX_IMPORT_REQUEST_BYTES:
+                return JSONResponse(
+                    status_code=413,
+                    content={"detail": "Import request must be 2.1 MB or smaller."},
+                )
+    return await call_next(request)
+
+
+@app.middleware("http")
 async def enforce_request_origin(request, call_next):
     """Reject cross-origin browser signals on state-changing requests."""
     if request.method not in {"GET", "HEAD", "OPTIONS"}:
@@ -122,12 +160,22 @@ async def add_security_headers(request, call_next):
     return response
 
 
+@app.exception_handler(RequestValidationError)
+async def sanitized_validation_error(request: Request, exc: RequestValidationError):
+    """Return validation locations and messages without echoing submitted values."""
+    errors = [
+        {"loc": error.get("loc", ()), "msg": error.get("msg", "Invalid value."), "type": error.get("type", "value_error")}
+        for error in exc.errors()
+    ]
+    return JSONResponse(status_code=422, content={"detail": errors})
+
+
 def save_validated_model(model: ProjectModel) -> ProjectModel:
     """Revalidate mutable model state before persisting it."""
     try:
         validated = ProjectModel.model_validate(model.model_dump(mode="python"))
     except ValidationError as exc:
-        raise HTTPException(status_code=422, detail=f"Invalid model: {exc}") from exc
+        raise HTTPException(status_code=422, detail="Model failed integrity validation.") from exc
     return store.save_model(validated)
 
 
@@ -159,14 +207,28 @@ async def import_model(upload: UploadFile) -> ProjectModel:
     """Validate a versioned JSON upload before replacing the current local model."""
     if upload.content_type not in {"application/json", "text/json", "application/octet-stream"}:
         raise HTTPException(status_code=415, detail="Upload a JSON file.")
-    raw = await upload.read(2_000_001)
-    if len(raw) > 2_000_000:
+    raw = await upload.read(MAX_IMPORT_BYTES + 1)
+    if len(raw) > MAX_IMPORT_BYTES:
         raise HTTPException(status_code=413, detail="JSON import must be 2 MB or smaller.")
     try:
-        payload = json.loads(raw)
+        text = raw.decode("utf-8")
+        payload = json.loads(
+            text,
+            object_pairs_hook=_unique_json_object,
+            parse_constant=_reject_json_constant,
+        )
+    except (UnicodeDecodeError, ValueError, RecursionError) as exc:
+        raise HTTPException(
+            status_code=422,
+            detail="Upload must contain valid UTF-8 JSON without duplicate object keys.",
+        ) from exc
+    try:
         model = ProjectModel.model_validate(payload)
-    except (UnicodeDecodeError, ValueError) as exc:
-        raise HTTPException(status_code=422, detail=f"Invalid VIRTUE WISE model: {exc}") from exc
+    except (ValidationError, RecursionError) as exc:
+        raise HTTPException(
+            status_code=422,
+            detail="JSON does not match the supported VIRTUE WISE model schema.",
+        ) from exc
     return save_validated_model(model)
 
 
