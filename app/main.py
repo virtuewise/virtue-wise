@@ -164,7 +164,11 @@ async def add_security_headers(request, call_next):
 async def sanitized_validation_error(request: Request, exc: RequestValidationError):
     """Return validation locations and messages without echoing submitted values."""
     errors = [
-        {"loc": error.get("loc", ()), "msg": error.get("msg", "Invalid value."), "type": error.get("type", "value_error")}
+        {
+            "loc": error.get("loc", ()),
+            "msg": error.get("msg", "Invalid value."),
+            "type": error.get("type", "value_error"),
+        }
         for error in exc.errors()
     ]
     return JSONResponse(status_code=422, content={"detail": errors})
