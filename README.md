@@ -54,7 +54,7 @@ pytest
 
 ## Known limitations
 
-- Single local model and single-process storage; state-changing requests are serialized within that process, but multi-worker coordination and multi-user operation are not supported.
+- Single local model and single-process storage; state-changing requests are serialized within that process, but multi-worker coordination, stale-write protection, and multi-user operation are not supported. Import request bodies are bounded in the application, but server-level upload timeouts and global concurrency limits still need deployment configuration.
 - No authentication, authorization, sessions, encryption at rest, or session-bound CSRF tokens. Basic request-origin and Host checks are defense in depth, not production hardening.
 - JSON import supports the current schema version only; migrations are not implemented.
 - Scenario comparison is qualitative, not a prediction engine.
