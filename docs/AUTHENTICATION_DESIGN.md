@@ -9,6 +9,7 @@ The prototype remains a single-user, loopback-only application using fictional/n
 ## Deployment decision required
 
 Before implementation, maintainers must choose and record:
+
 - whether the application remains a local single-user tool or becomes a networked multi-user service;
 - the user population, tenant model, data classification, and account recovery expectations;
 - the trusted TLS-terminating reverse proxy and the exact proxy-to-application trust boundary;
@@ -27,6 +28,7 @@ If maintainers choose a strictly offline, single-user deployment instead, keep t
 ## Authorization model
 
 Start with deny-by-default, single-owner authorization:
+
 - every authenticated session maps to one stable identity key (`issuer` + `subject`);
 - each project has one owner identity;
 - read, create, update, import, export, and delete operations require ownership;
@@ -38,6 +40,7 @@ Authorization must be enforced server-side on every route, not by hiding UI cont
 ## CSRF and request-origin controls
 
 For cookie-authenticated browser sessions:
+
 1. Require a synchronizer CSRF token bound to the server-side session on every state-changing request. Expose it to the same-origin UI through a protected bootstrap endpoint or rendered page data; send it in a custom request header.
 2. Validate the token in constant time and reject missing, invalid, or expired tokens.
 3. Validate the request Origin against a configured canonical public origin. Use Referer only as a carefully validated fallback; reject `Origin: null`.
