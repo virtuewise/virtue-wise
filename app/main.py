@@ -96,7 +96,9 @@ async def enforce_request_origin(request, call_next):
     """Reject cross-origin browser signals on state-changing requests."""
     if request.method not in {"GET", "HEAD", "OPTIONS"}:
         if request.headers.get("sec-fetch-site", "").lower() == "cross-site":
-            return JSONResponse(status_code=403, content={"detail": "Cross-origin request rejected."})
+            return JSONResponse(
+                status_code=403, content={"detail": "Cross-origin request rejected."}
+            )
 
         origin = request.headers.get("origin")
         is_referer = False
