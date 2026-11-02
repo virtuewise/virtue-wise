@@ -1,6 +1,8 @@
 """HTTP API and static interface for the VIRTUE WISE prototype."""
 
+import asyncio
 import json
+import threading
 from contextlib import asynccontextmanager
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -18,6 +20,8 @@ from app.models import Hypothesis, ProjectModel, Scenario, Statement, now_utc
 STATIC_DIR = Path(__file__).parent / "static"
 MAX_IMPORT_BYTES = 2_000_000
 MAX_IMPORT_REQUEST_BYTES = 2_100_000
+MUTATION_LOCK_TIMEOUT_SECONDS = 10
+_MUTATION_LOCK = threading.Lock()
 
 
 def _unique_json_object(pairs):
@@ -105,6 +109,24 @@ def _same_origin(source: str, request, *, is_referer: bool = False) -> bool:
         and supplied.hostname.lower() == (expected.hostname or "").lower()
         and effective_port(supplied, supplied_port) == effective_port(expected, expected_port)
     )
+
+
+@app.middleware("http")
+async def serialize_mutations(request, call_next):
+    """Serialize state-changing requests within this single application process."""
+    if request.method not in {"POST", "PUT", "PATCH", "DELETE"}:
+        return await call_next(request)
+
+    acquired = await asyncio.to_thread(_MUTATION_LOCK.acquire, True, MUTATION_LOCK_TIMEOUT_SECONDS)
+    if not acquired:
+        return JSONResponse(
+            status_code=503,
+            content={"detail": "Another update is in progress. Retry the request."},
+        )
+    try:
+        return await call_next(request)
+    finally:
+        _MUTATION_LOCK.release()
 
 
 @app.middleware("http")

@@ -1,6 +1,7 @@
 """Behavioral tests for the VIRTUE WISE prototype API."""
 
 import json
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from fastapi.testclient import TestClient
@@ -476,3 +477,65 @@ def test_request_validation_errors_do_not_echo_submitted_values(tmp_path, monkey
     assert response.status_code == 422
     assert "SENSITIVE-CANARY" not in response.text
     assert "unexpected_secret" in response.text
+
+
+def test_json_export_can_restore_a_deleted_model(tmp_path, monkeypatch):
+    monkeypatch.setenv("VIRTUE_WISE_DB", str(tmp_path / "restore.sqlite3"))
+    with TestClient(app) as client:
+        statement = client.post(
+            "/api/statements",
+            json={"text": "A backed-up statement", "source_label": "Recovery fixture"},
+        ).json()["statements"][0]
+        hypothesis = client.post(
+            "/api/hypotheses",
+            json={
+                "claim": "A backed-up hypothesis",
+                "evidence_statement_ids": [statement["id"]],
+            },
+        ).json()["hypotheses"][0]
+        client.patch(
+            f"/api/hypotheses/{hypothesis['id']}/review",
+            json={"status": "accepted", "note": "Verified in the fixture."},
+        )
+        client.post(
+            "/api/scenarios",
+            json={"name": "Backup scenario", "assumptions": ["A stable assumption"]},
+        )
+
+        backup = client.get("/api/export").content
+        exported = json.loads(backup)
+        assert client.delete("/api/model").status_code == 204
+        assert client.get("/api/model").json()["statements"] == []
+
+        restored = client.put(
+            "/api/import",
+            files={"upload": ("backup.json", backup, "application/json")},
+        )
+        assert restored.status_code == 200
+        model = restored.json()
+        assert model["id"] == exported["id"]
+        assert model["statements"][0]["id"] == statement["id"]
+        assert model["hypotheses"][0]["evidence_statement_ids"] == [statement["id"]]
+        assert model["hypotheses"][0]["review_status"] == "accepted"
+        assert model["scenarios"][0]["name"] == "Backup scenario"
+
+
+def test_concurrent_statement_creates_do_not_lose_updates(tmp_path, monkeypatch):
+    monkeypatch.setenv("VIRTUE_WISE_DB", str(tmp_path / "concurrent.sqlite3"))
+    with TestClient(app) as client:
+
+        def create_statement(index):
+            return client.post(
+                "/api/statements",
+                json={"text": f"Concurrent statement {index}"},
+            )
+
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            responses = list(executor.map(create_statement, range(12)))
+
+        assert all(response.status_code == 201 for response in responses)
+        saved = client.get("/api/model").json()
+        assert len(saved["statements"]) == 12
+        assert {item["text"] for item in saved["statements"]} == {
+            f"Concurrent statement {index}" for index in range(12)
+        }
