@@ -6,7 +6,7 @@ VIRTUE WISE is a single-process FastAPI application serving a static HTML/CSS/Ja
 
 - `app/models.py` defines project, statement, hypothesis, and scenario records and validates IDs and evidence references.
 - `app/store.py` owns SQLite persistence.
-- `app/main.py` exposes the interface, health endpoint, model API, record editing, hypothesis review, scenario operations, JSON import/export, and deletion.
+- `app/main.py` exposes the interface, health endpoint, model API, record editing, hypothesis review, scenario operations, JSON import/export, and deletion; it also applies browser-origin checks and a loopback Host allowlist.
 - `app/static/` contains the browser interface and interaction logic.
 - `tests/` exercises API behavior, provenance rules, scenario operations, import validation, and the documented demo fixture.
 - `examples/demo-project.json` provides a fictional model for local exploration and acceptance testing.
@@ -47,6 +47,6 @@ Open <http://127.0.0.1:8000>. API documentation is available at <http://127.0.0.
 - This is a single-project prototype intended for local, trusted use, not a multi-user application.
 - Scenarios are qualitative; the application does not estimate probabilities, causal effects, or future outcomes.
 - JSON import supports the current schema version only; there is no migration tooling.
-- There is no authentication, encryption-at-rest layer, backup manager, CSRF protection, or concurrency coordination for multiple application workers.
+- There is no authentication, session management, authorization, encryption-at-rest layer, backup manager, session-bound CSRF token, or concurrency coordination for multiple application workers. Basic Origin/Referer, Fetch Metadata, and Host checks are defense in depth only; missing browser origin metadata is allowed for non-browser API clients. See [the authentication design](AUTHENTICATION_DESIGN.md).
 - Editing uses native HTML dialog forms with associated labels, required-field validation, save/cancel controls, and visible save-error feedback. Manual keyboard and screen-reader verification remains outstanding.
 - The server should be bound to localhost. Do not expose it to an untrusted network or enter sensitive data.
