@@ -117,9 +117,7 @@ async def serialize_mutations(request, call_next):
     if request.method not in {"POST", "PUT", "PATCH", "DELETE"}:
         return await call_next(request)
 
-    acquired = await asyncio.to_thread(
-        _MUTATION_LOCK.acquire, True, MUTATION_LOCK_TIMEOUT_SECONDS
-    )
+    acquired = await asyncio.to_thread(_MUTATION_LOCK.acquire, True, MUTATION_LOCK_TIMEOUT_SECONDS)
     if not acquired:
         return JSONResponse(
             status_code=503,
