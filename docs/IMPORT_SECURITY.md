@@ -6,7 +6,7 @@
 
 - The import endpoint accepts `application/json`, `text/json`, and `application/octet-stream`.
 - The uploaded file is read to a maximum of 2,000,001 bytes; files larger than 2,000,000 bytes receive HTTP 413.
-- Requests that include a `Content-Length` header above 2,100,000 bytes are rejected before FastAPI parses the multipart upload.
+- Import request bodies above 2,100,000 bytes are rejected before FastAPI parses the multipart upload, whether or not `Content-Length` is supplied.
 - The filename is not used as a filesystem path.
 - The content must decode as UTF-8 JSON. Duplicate object member names and non-standard `NaN` / `Infinity` constants are rejected.
 - The parsed value must validate against schema version 1 and the project model's record and evidence-reference invariants.
@@ -22,6 +22,6 @@
 
 ## Explicit residual limits
 
-The 2.1 MB request-body guard applies when a valid `Content-Length` header is present. Requests without that header (including chunked transfer) are not bounded by this middleware before Starlette's multipart parser spools the upload. The endpoint still caps the file bytes it reads, but that is not a complete request-body resource limit. A production reverse proxy or ASGI server must enforce a hard request-body limit, upload timeout, and concurrency limit before any network deployment.
+The application middleware checks a declared `Content-Length` and also counts incoming ASGI request-body chunks when the header is absent (including chunked transfer). It buffers at most 2,100,000 request-body bytes and rejects an over-limit request before Starlette's multipart parser receives the body. This is an application-level bound, not a complete ingress resource-control policy: a server may already have allocated an individual incoming ASGI chunk, and slow clients or many simultaneous uploads can still consume connections and memory. A production reverse proxy or ASGI server must additionally enforce a hard request-body limit, upload/read timeout, and concurrency limit before any network deployment.
 
 The application has no malware scanning, quarantine workflow, rate limiting, global concurrent-upload budget, or independent parser sandbox. It must remain local-only and use fictional/non-sensitive data. See [issue #7](https://github.com/virtuewise/virtue-wise/issues/7) for the release gate.
