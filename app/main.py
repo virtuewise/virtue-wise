@@ -76,9 +76,7 @@ def _same_origin(source: str, request, *, is_referer: bool = False) -> bool:
         or supplied.password is not None
     ):
         return False
-    if not is_referer and (
-        supplied.path not in {"", "/"} or supplied.query or supplied.fragment
-    ):
+    if not is_referer and (supplied.path not in {"", "/"} or supplied.query or supplied.fragment):
         return False
 
     def effective_port(parsed, port):
@@ -106,7 +104,9 @@ async def enforce_request_origin(request, call_next):
             origin = request.headers.get("referer")
             is_referer = origin is not None
         if origin is not None and not _same_origin(origin, request, is_referer=is_referer):
-            return JSONResponse(status_code=403, content={"detail": "Cross-origin request rejected."})
+            return JSONResponse(
+                status_code=403, content={"detail": "Cross-origin request rejected."}
+            )
 
     return await call_next(request)
 
