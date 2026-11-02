@@ -523,6 +523,7 @@ def test_json_export_can_restore_a_deleted_model(tmp_path, monkeypatch):
 def test_concurrent_statement_creates_do_not_lose_updates(tmp_path, monkeypatch):
     monkeypatch.setenv("VIRTUE_WISE_DB", str(tmp_path / "concurrent.sqlite3"))
     with TestClient(app) as client:
+
         def create_statement(index):
             return client.post(
                 "/api/statements",
