@@ -8,8 +8,8 @@ from urllib.parse import urlsplit
 from fastapi import FastAPI, HTTPException, Response, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from starlette.middleware.trustedhost import TrustedHostMiddleware
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app import store
 from app.models import Hypothesis, ProjectModel, Scenario, Statement, now_utc
