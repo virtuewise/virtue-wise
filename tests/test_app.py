@@ -415,3 +415,64 @@ def test_untrusted_host_header_is_rejected(tmp_path, monkeypatch):
     client = test_client(tmp_path, monkeypatch)
     response = client.get("/health", headers={"Host": "attacker.example"})
     assert response.status_code == 400
+
+
+def test_import_rejects_invalid_utf8_and_malformed_json_without_replacing_model(
+    tmp_path, monkeypatch
+):
+    client = test_client(tmp_path, monkeypatch)
+    client.put("/api/model", json={"title": "Keep this model"})
+    invalid_payloads = [
+        b"\\xff\\xfe",
+        b'{"title": "SENSITIVE-CANARY",',
+        b"[" * 3000,
+    ]
+    for payload in invalid_payloads:
+        response = client.put(
+            "/api/import",
+            files={"upload": ("invalid.json", payload, "application/json")},
+        )
+        assert response.status_code == 422
+        assert "SENSITIVE-CANARY" not in response.text
+        assert client.get("/api/model").json()["title"] == "Keep this model"
+
+
+def test_import_rejects_duplicate_keys_and_nonstandard_json_numbers(tmp_path, monkeypatch):
+    client = test_client(tmp_path, monkeypatch)
+    client.put("/api/model", json={"title": "Keep this model"})
+    invalid_payloads = [
+        b'{"schema_version": 1, "title": "first", "title": "second"}',
+        b'{"schema_version": 1, "goal": NaN}',
+    ]
+    for payload in invalid_payloads:
+        response = client.put(
+            "/api/import",
+            files={"upload": ("ambiguous.json", payload, "application/json")},
+        )
+        assert response.status_code == 422
+        assert client.get("/api/model").json()["title"] == "Keep this model"
+
+
+def test_declared_oversized_import_request_is_rejected_before_parsing(tmp_path, monkeypatch):
+    client = test_client(tmp_path, monkeypatch)
+    response = client.put(
+        "/api/import",
+        content=b"not a multipart body",
+        headers={"Content-Length": "2100001", "Content-Type": "multipart/form-data"},
+    )
+    assert response.status_code == 413
+
+
+def test_request_validation_errors_do_not_echo_submitted_values(tmp_path, monkeypatch):
+    client = test_client(tmp_path, monkeypatch)
+    response = client.post(
+        "/api/statements",
+        json={
+            "text": "A valid text value",
+            "source_label": "SENSITIVE-CANARY",
+            "unexpected_secret": "SENSITIVE-CANARY",
+        },
+    )
+    assert response.status_code == 422
+    assert "SENSITIVE-CANARY" not in response.text
+    assert "unexpected_secret" in response.text
