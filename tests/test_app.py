@@ -548,10 +548,14 @@ def test_chunked_import_request_without_content_length_is_bounded(
     client.put("/api/model", json={"title": "Preserve this model"})
     boundary = "virtue-wise-boundary"
     body = (
-        f"--{boundary}\r\n"
-        'Content-Disposition: form-data; name="upload"; filename="large.json"\r\n'
-        "Content-Type: application/json\r\n\r\n"
-    ).encode() + (b"0" * 2_100_001) + f"\r\n--{boundary}--\r\n".encode()
+        (
+            f"--{boundary}\r\n"
+            'Content-Disposition: form-data; name="upload"; filename="large.json"\r\n'
+            "Content-Type: application/json\r\n\r\n"
+        ).encode()
+        + (b"0" * 2_100_001)
+        + f"\r\n--{boundary}--\r\n".encode()
+    )
     chunks = (body[index : index + 65536] for index in range(0, len(body), 65536))
     response = client.put(
         "/api/import",
