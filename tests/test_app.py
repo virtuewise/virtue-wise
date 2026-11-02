@@ -541,9 +541,7 @@ def test_concurrent_statement_creates_do_not_lose_updates(tmp_path, monkeypatch)
         }
 
 
-def test_chunked_import_request_without_content_length_is_bounded(
-    tmp_path, monkeypatch
-):
+def test_chunked_import_request_without_content_length_is_bounded(tmp_path, monkeypatch):
     client = test_client(tmp_path, monkeypatch)
     client.put("/api/model", json={"title": "Preserve this model"})
     boundary = "virtue-wise-boundary"
