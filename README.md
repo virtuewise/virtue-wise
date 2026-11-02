@@ -6,7 +6,7 @@ VIRTUE WISE explores ways to help people connect information, understand the bas
 
 > **Core idea:** move beyond answers alone toward understanding that can be examined, corrected, and used.
 
-[Vision](docs/VISION.md) · [Prototype plan](docs/PROTOTYPE.md) · [Architecture](docs/ARCHITECTURE.md) · [Acceptance walkthrough](docs/ACCEPTANCE.md) · [Model evaluation protocol](docs/MODEL_EVALUATION.md) · [Threat model](docs/THREAT_MODEL.md) · [Release and recovery](docs/RELEASE_READINESS.md) · [Roadmap](ROADMAP.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
+[Vision](docs/VISION.md) · [Prototype plan](docs/PROTOTYPE.md) · [Architecture](docs/ARCHITECTURE.md) · [Acceptance walkthrough](docs/ACCEPTANCE.md) · [Model evaluation protocol](docs/MODEL_EVALUATION.md) · [Threat model](docs/THREAT_MODEL.md) · [Authentication design](docs/AUTHENTICATION_DESIGN.md) · [Release and recovery](docs/RELEASE_READINESS.md) · [Roadmap](ROADMAP.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
 
 ## Why this project
 
@@ -55,7 +55,7 @@ pytest
 ## Known limitations
 
 - Single local model and single-process storage; no multi-user operation or concurrency coordination.
-- No authentication, encryption at rest, CSRF protection, or production deployment hardening.
+- No authentication, authorization, sessions, encryption at rest, or session-bound CSRF tokens. Basic request-origin and Host checks are defense in depth, not production hardening.
 - JSON import supports the current schema version only; migrations are not implemented.
 - Scenario comparison is qualitative, not a prediction engine.
 - Editing uses native HTML dialog forms with labels, validation, save/cancel controls, and visible error feedback.
