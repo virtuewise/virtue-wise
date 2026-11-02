@@ -27,7 +27,7 @@ def test_core_workflow_and_responsive_layout():
         expect(page.get_by_label("Project name")).to_have_value("Browser acceptance project")
 
         # Statements remain separately visible and can be linked to a hypothesis.
-        page.get_by_label("Statement").fill("Two planning meetings overran.")
+        page.locator("#statement-text").fill("Two planning meetings overran.")
         page.get_by_label("Source label").fill("Fictional planning notes")
         page.get_by_label("Optional source excerpt").fill("Two meetings exceeded the planned duration.")
         page.get_by_role("button", name="Add statement").click()
