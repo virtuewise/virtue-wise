@@ -130,22 +130,46 @@ async def serialize_mutations(request, call_next):
 
 
 @app.middleware("http")
-async def limit_import_request_size(request, call_next):
-    """Reject declared oversized multipart requests before FastAPI parses the upload."""
-    if request.method == "PUT" and request.url.path == "/api/import":
-        content_length = request.headers.get("content-length")
-        if content_length is not None:
-            try:
-                request_size = int(content_length)
-            except ValueError:
-                return JSONResponse(status_code=400, content={"detail": "Invalid request size."})
-            if request_size < 0:
-                return JSONResponse(status_code=400, content={"detail": "Invalid request size."})
-            if request_size > MAX_IMPORT_REQUEST_BYTES:
-                return JSONResponse(
-                    status_code=413,
-                    content={"detail": "Import request must be 2.1 MB or smaller."},
-                )
+async def limit_import_request_size(request: Request, call_next):
+    """Bound chunked and declared import bodies before multipart parsing."""
+    if request.method != "PUT" or request.url.path != "/api/import":
+        return await call_next(request)
+
+    declared = request.headers.get("content-length")
+    if declared is not None:
+        try:
+            size = int(declared)
+        except ValueError:
+            return JSONResponse(status_code=400, content={"detail": "Invalid request size."})
+        if size < 0:
+            return JSONResponse(status_code=400, content={"detail": "Invalid request size."})
+        if size > MAX_IMPORT_REQUEST_BYTES:
+            return JSONResponse(status_code=413, content={"detail": "Import request must be 2.1 MB or smaller."})
+
+    chunks = []
+    total = 0
+    while True:
+        message = await request.receive()
+        if message["type"] == "http.disconnect":
+            return Response(status_code=400)
+        chunk = message.get("body", b"")
+        total += len(chunk)
+        if total > MAX_IMPORT_REQUEST_BYTES:
+            return JSONResponse(status_code=413, content={"detail": "Import request must be 2.1 MB or smaller."})
+        chunks.append(message)
+        if not message.get("more_body", False):
+            break
+
+    index = 0
+    async def replay():
+        nonlocal index
+        if index < len(chunks):
+            message = chunks[index]
+            index += 1
+            return message
+        return {"type": "http.request", "body": b"", "more_body": False}
+
+    request._receive = replay
     return await call_next(request)
 
 
