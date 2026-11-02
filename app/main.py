@@ -50,6 +50,17 @@ app = FastAPI(
 )
 
 
+@app.middleware("http")
+async def add_security_headers(request, call_next):
+    """Apply conservative browser security headers to every HTTP response."""
+    response = await call_next(request)
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("Referrer-Policy", "no-referrer")
+    response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+    return response
+
+
 def save_validated_model(model: ProjectModel) -> ProjectModel:
     """Revalidate mutable model state before persisting it."""
     try:
