@@ -144,9 +144,12 @@ async def limit_import_request_size(request: Request, call_next):
         if size < 0:
             return JSONResponse(status_code=400, content={"detail": "Invalid request size."})
         if size > MAX_IMPORT_REQUEST_BYTES:
-            return JSONResponse(status_code=413, content={"detail": "Import request must be 2.1 MB or smaller."})
+            return JSONResponse(
+                status_code=413,
+                content={"detail": "Import request must be 2.1 MB or smaller."},
+            )
 
-    chunks = []
+    chunks: list[dict] = []
     total = 0
     while True:
         message = await request.receive()
@@ -155,12 +158,16 @@ async def limit_import_request_size(request: Request, call_next):
         chunk = message.get("body", b"")
         total += len(chunk)
         if total > MAX_IMPORT_REQUEST_BYTES:
-            return JSONResponse(status_code=413, content={"detail": "Import request must be 2.1 MB or smaller."})
+            return JSONResponse(
+                status_code=413,
+                content={"detail": "Import request must be 2.1 MB or smaller."},
+            )
         chunks.append(message)
         if not message.get("more_body", False):
             break
 
     index = 0
+
     async def replay():
         nonlocal index
         if index < len(chunks):
