@@ -3,11 +3,13 @@
 import json
 from contextlib import asynccontextmanager
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from fastapi import FastAPI, HTTPException, Response, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app import store
 from app.models import Hypothesis, ProjectModel, Scenario, Statement, now_utc
@@ -48,6 +50,65 @@ app = FastAPI(
     version="0.2.0",
     lifespan=lifespan,
 )
+
+# The supported deployment is loopback-only. Reject arbitrary Host headers to
+# reduce DNS-rebinding and host-header attack surface; "testserver" is for tests.
+app.add_middleware(
+    TrustedHostMiddleware,
+    allowed_hosts=["localhost", "127.0.0.1", "[::1]", "testserver"],
+)
+
+
+def _same_origin(source: str, request, *, is_referer: bool = False) -> bool:
+    """Compare an Origin or Referer origin with the request's own origin."""
+    try:
+        supplied = urlsplit(source)
+        expected = urlsplit(str(request.base_url))
+        supplied_port = supplied.port
+        expected_port = expected.port
+    except ValueError:
+        return False
+
+    if (
+        supplied.scheme not in {"http", "https"}
+        or not supplied.hostname
+        or supplied.username is not None
+        or supplied.password is not None
+    ):
+        return False
+    if not is_referer and (supplied.path not in {"", "/"} or supplied.query or supplied.fragment):
+        return False
+
+    def effective_port(parsed, port):
+        return port or (443 if parsed.scheme == "https" else 80)
+
+    return (
+        supplied.scheme.lower() == expected.scheme.lower()
+        and supplied.hostname.lower() == (expected.hostname or "").lower()
+        and effective_port(supplied, supplied_port) == effective_port(expected, expected_port)
+    )
+
+
+@app.middleware("http")
+async def enforce_request_origin(request, call_next):
+    """Reject cross-origin browser signals on state-changing requests."""
+    if request.method not in {"GET", "HEAD", "OPTIONS"}:
+        if request.headers.get("sec-fetch-site", "").lower() == "cross-site":
+            return JSONResponse(
+                status_code=403, content={"detail": "Cross-origin request rejected."}
+            )
+
+        origin = request.headers.get("origin")
+        is_referer = False
+        if origin is None:
+            origin = request.headers.get("referer")
+            is_referer = origin is not None
+        if origin is not None and not _same_origin(origin, request, is_referer=is_referer):
+            return JSONResponse(
+                status_code=403, content={"detail": "Cross-origin request rejected."}
+            )
+
+    return await call_next(request)
 
 
 @app.middleware("http")

@@ -366,3 +366,52 @@ def test_security_headers_are_present_on_application_responses(tmp_path, monkeyp
     assert response.headers["x-frame-options"] == "DENY"
     assert response.headers["referrer-policy"] == "no-referrer"
     assert response.headers["permissions-policy"] == ("camera=(), microphone=(), geolocation=()")
+
+
+def test_state_changing_request_rejects_cross_origin_origin_header(tmp_path, monkeypatch):
+    client = test_client(tmp_path, monkeypatch)
+    response = client.put(
+        "/api/model",
+        json={"title": "Should not be saved"},
+        headers={"Origin": "https://attacker.example"},
+    )
+    assert response.status_code == 403
+    assert client.get("/api/model").json()["title"] == "Untitled project"
+
+
+def test_state_changing_request_accepts_matching_origin(tmp_path, monkeypatch):
+    client = test_client(tmp_path, monkeypatch)
+    response = client.put(
+        "/api/model",
+        json={"title": "Same-origin update"},
+        headers={"Origin": "http://testserver"},
+    )
+    assert response.status_code == 200
+    assert response.json()["title"] == "Same-origin update"
+
+
+def test_state_changing_request_rejects_cross_site_fetch_metadata(tmp_path, monkeypatch):
+    client = test_client(tmp_path, monkeypatch)
+    response = client.delete(
+        "/api/model",
+        headers={"Sec-Fetch-Site": "cross-site"},
+    )
+    assert response.status_code == 403
+    assert client.get("/api/model").status_code == 200
+
+
+def test_state_changing_request_rejects_cross_origin_referer(tmp_path, monkeypatch):
+    client = test_client(tmp_path, monkeypatch)
+    response = client.put(
+        "/api/model",
+        json={"title": "Should not be saved"},
+        headers={"Referer": "https://attacker.example/form"},
+    )
+    assert response.status_code == 403
+    assert client.get("/api/model").json()["title"] == "Untitled project"
+
+
+def test_untrusted_host_header_is_rejected(tmp_path, monkeypatch):
+    client = test_client(tmp_path, monkeypatch)
+    response = client.get("/health", headers={"Host": "attacker.example"})
+    assert response.status_code == 400
