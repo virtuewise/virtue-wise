@@ -21,7 +21,7 @@ Security goals are confidentiality from other local users/processes where the op
 ## Trust boundaries and data flows
 
 1. **Browser to local API:** the browser sends user input to the FastAPI server. State-changing requests with cross-origin Origin/Referer or `Sec-Fetch-Site: cross-site` signals are rejected, and unapproved Host headers are blocked. Requests with no browser origin metadata are still accepted for non-browser API clients; a malicious local process remains outside this protection. There is no session-bound CSRF token or authenticated identity.
-2. **Import boundary:** uploaded bytes are parsed as JSON, validated against schema version 1 and cross-record invariants, then persisted. Content type and a 2 MB body limit are checked in the current endpoint; malformed payloads should fail without replacing the saved model.
+2. **Import boundary:** uploaded bytes are parsed as JSON, validated against schema version 1 and cross-record invariants, then persisted. Content type and a 2 MB file limit are checked in the endpoint; declared multipart requests above 2.1 MB are rejected before parsing. UTF-8, duplicate-key, non-standard numeric, and schema validation failures are rejected without replacing the saved model. Requests without Content-Length are not bounded before multipart parsing.
 3. **Persistence boundary:** validated project state is serialized to one SQLite row. Filesystem permissions and host security currently provide the main access boundary.
 4. **Export boundary:** the API emits the complete project as downloadable JSON. Anyone able to call it can obtain all stored project content.
 5. **Deployment boundary:** a reverse proxy, container, LAN interface, or public endpoint changes the threat model and is unsupported until issue #7 is satisfied.
@@ -32,7 +32,7 @@ Security goals are confidentiality from other local users/processes where the op
 |---|---|---|
 | Untrusted website or local process sends state-changing requests | Unauthorized edits or deletion | Cross-origin browser signals and unapproved Host headers are rejected; no authentication, session-bound CSRF token, or defense against a malicious local process; missing origin metadata is allowed for API clients |
 | Another local OS user reads the SQLite file or an exported JSON file | Disclosure of project content | Rely on OS account and file permissions; no application-level encryption |
-| Malformed or oversized import | Crash, resource exhaustion, or accidental data loss | 2 MB import limit and Pydantic validation exist; test malformed encodings, parser failures, and replacement atomicity |
+| Malformed or oversized import | Crash, resource exhaustion, or accidental data loss | 2 MB file limit, 2.1 MB declared-request limit, strict UTF-8/JSON parsing, duplicate-key rejection, schema validation, and generic validation errors; chunked/no-Length bodies still require an upstream limit |
 | Duplicate IDs or invalid evidence links | Ambiguous records or broken provenance | Domain model validation rejects duplicate IDs, duplicate evidence links, and dangling references |
 | Storage write failure during a mutation | UI/API error or uncertain save result | SQLite transaction should preserve the previous committed row; failure-path tests and clear UI feedback are required |
 | Concurrent requests or multiple server workers | Lost updates from last-writer-wins replacement | No optimistic concurrency/version check or multi-worker coordination; single trusted process only |
@@ -43,8 +43,8 @@ Security goals are confidentiality from other local users/processes where the op
 
 ### Present in the prototype (verify continuously)
 
-- Strict Pydantic models reject extra fields and validate schema version, unique record IDs, and evidence references.
-- Import rejects unsupported content types, limits the body to 2 MB, validates before save, and returns an error for invalid models.
+- Strict Pydantic models reject extra fields and validate schema version, unique record IDs, and evidence references. Request-validation responses omit submitted input values.
+- Import rejects unsupported content types, limits file bytes to 2 MB, rejects declared multipart requests above 2.1 MB, validates before save, and returns generic errors for malformed or invalid models. Chunked/no-Length request bodies are not fully bounded before multipart parsing; an upstream hard body limit is still required.
 - Statement deletion is blocked while a hypothesis references it.
 - Editing linked statements or materially changing hypotheses resets their review state.
 - SQLite parameter binding is used for model writes; a single-row upsert keeps each save within a transaction.
