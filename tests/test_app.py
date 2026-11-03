@@ -733,9 +733,8 @@ def test_database_survives_independent_application_process_restart(tmp_path, mon
     assert recovered["title"] == "Restart recovery project"
     assert recovered["goal"] == "Verify durable local persistence."
     assert recovered["statements"][0]["id"] == statement_id
-    assert recovered["statements"][0]["text"] == (
-        "A saved observation survives a process restart."
-    )
+    recovered_statement_text = recovered["statements"][0]["text"]
+    assert recovered_statement_text == "A saved observation survives a process restart."
 
 
 def test_independent_process_writes_do_not_lose_updates(tmp_path, monkeypatch):
