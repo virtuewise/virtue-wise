@@ -632,3 +632,44 @@ def test_import_capacity_limit_returns_503(tmp_path, monkeypatch):
     )
     assert response.status_code == 503
     assert response.headers["retry-after"] == "1"
+
+
+
+def test_full_model_replacement_requires_current_revision(tmp_path, monkeypatch):
+    client = test_client(tmp_path, monkeypatch)
+    initial = client.get("/api/model")
+    assert initial.headers["etag"] == '"empty"'
+
+    saved = put_with_revision(client, "/api/model", json={"title": "Current project"})
+    assert saved.status_code == 200
+    current = client.get("/api/model")
+    assert current.headers["etag"] == f'"{saved.json()["updated_at"]}"'
+
+    stale = client.put(
+        "/api/model",
+        json={"title": "Stale replacement"},
+        headers={"If-Match": initial.headers["etag"]},
+    )
+    assert stale.status_code == 412
+    assert client.get("/api/model").json()["title"] == "Current project"
+
+    missing = client.put("/api/model", json={"title": "No precondition"})
+    assert missing.status_code == 428
+    assert client.get("/api/model").json()["title"] == "Current project"
+
+
+def test_import_rejects_stale_revision_without_replacing_model(tmp_path, monkeypatch):
+    client = test_client(tmp_path, monkeypatch)
+    stale_revision = client.get("/api/model").headers["etag"]
+    created = client.post("/api/statements", json={"text": "A newer saved statement"})
+    assert created.status_code == 201
+
+    imported = client.put(
+        "/api/import",
+        files={"upload": ("stale.json", b'{"schema_version": 1, "title": "Stale import"}', "application/json")},
+        headers={"If-Match": stale_revision},
+    )
+    assert imported.status_code == 412
+    saved = client.get("/api/model").json()
+    assert saved["title"] == "Untitled project"
+    assert saved["statements"][0]["text"] == "A newer saved statement"
