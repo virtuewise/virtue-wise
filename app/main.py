@@ -486,6 +486,17 @@ def run_analysis_self_test(request: AnalysisSelfTestRequest) -> dict:
         draft = analysis.create_analysis_draft(
             sample_prompt, request.provider, request.model, sample_project
         )
+        if not (
+            draft.summary
+            or draft.hypotheses
+            or draft.missing_information
+            or draft.questions
+            or draft.experiments
+            or draft.scenarios
+        ):
+            raise analysis.AnalysisInvalidResponse(
+                "The provider returned an empty structured response."
+            )
         return {
             "ok": True,
             "provider": request.provider,
