@@ -496,7 +496,7 @@ function renderAnalysisDraft(draft, modelName) {
             method: "POST",
             body: JSON.stringify({
               claim: hypothesis.claim,
-              rationale: rationaleParts.join("\\n\\n").slice(0, 2000),
+              rationale: rationaleParts.join("\n\n").slice(0, 2000),
               evidence_statement_ids: hypothesis.evidence_statement_ids || [],
               uncertainty: "unknown",
             }),
