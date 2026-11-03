@@ -472,4 +472,7 @@ def export_model() -> JSONResponse:
 
 @app.delete("/api/model", status_code=204)
 def remove_model() -> None:
-    store.delete_model()
+    try:
+        store.delete_model()
+    except store.StoreBusyError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
