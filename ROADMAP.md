@@ -24,11 +24,23 @@ This roadmap separates the **first local prototype** from the broader research v
 ## Phase 2 — Make the model understandable
 
 - [x] Build a local browser interface for project and record editing
+- [x] Add conversational-first single-input intake that preserves the user's original description and creates a reviewable local workspace draft
+- [ ] Replace generic reflection prompts with evaluated, topic-aware analysis suggestions
 - [x] Display source labels, evidence links, and qualitative uncertainty
 - [x] Allow users to correct hypotheses and unlink evidence
 - [x] Record accept/revise/reject decisions without rewriting source statements
 - [ ] Complete a manual end-to-end walkthrough from a clean checkout
 - [ ] Complete keyboard-only, screen-reader, mobile-width, and zoom testing; record results in the acceptance walkthrough
+
+## Phase 3 — Build the intelligence layer
+
+- [ ] Define a provider-neutral analysis contract and explicit opt-in/data-flow policy before any remote model integration
+- [ ] Implement source-aware extraction that distinguishes direct quotations, user assertions, imported facts, and model-generated candidates
+- [ ] Generate reviewable, evidence-linked hypotheses with counter-hypotheses, missing evidence, and explicit limitations
+- [ ] Add user-approved research connectors with citations, retrieval timestamps, and source-quality checks
+- [ ] Add an investigation loop: formulate a question, identify discriminating evidence, propose a test, record results, and revise hypotheses
+- [ ] Evaluate false positives, missed relationships, usefulness, and calibration against a documented baseline
+- [ ] Keep all generated content in a draft state until the user explicitly reviews it
 
 ## Phase 3 — Evaluate useful inference
 
@@ -74,4 +86,4 @@ Early success is not measured only by stars. We will look for:
 
 ## Current completion boundary
 
-The runnable local prototype supports project editing, sourced statements, hypothesis review, qualitative scenario comparison, JSON import/export, local deletion, API tests, and CI. It is not a complete general-purpose world model, and it is not production-hardened: authentication, encryption at rest, CSRF protection, multi-user operation, migrations, and a completed manual accessibility review remain out of scope or unfinished. Do not deploy to an untrusted network.
+The runnable local prototype supports project editing, conversational-first manual intake, sourced statements, hypothesis review, qualitative scenario comparison, JSON import/export, local deletion, API tests, and CI. The intake is not an AI system: the intelligence, research, evidence extraction, and unknown-unknown discovery layers remain planned work. It is not a complete general-purpose world model, and it is not production-hardened: authentication, encryption at rest, CSRF protection, multi-user operation, migrations, and a completed manual accessibility review remain out of scope or unfinished. Do not deploy to an untrusted network.
