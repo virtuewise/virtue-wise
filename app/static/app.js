@@ -10,7 +10,7 @@ function announce(message, isError = false) {
 
 async function request(url, options = {}) {
   const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
-  if (url === "/api/model" && options.method === "PUT" || url === "/api/import") {
+  if ((url === "/api/model" && options.method === "PUT") || url === "/api/import") {
     if (!modelRevision) throw new Error("Reload the project before replacing or importing it.");
     headers["If-Match"] = `"${modelRevision}"`;
   }
