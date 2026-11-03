@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import sqlite3
 import threading
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -232,7 +233,7 @@ async def add_security_headers(request, call_next):
     response.headers.setdefault("X-Frame-Options", "DENY")
     response.headers.setdefault("Referrer-Policy", "no-referrer")
     response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
-    if request.url.path.startswith("/api/"):
+    if request.url.path.startswith("/api/") or request.url.path == "/ready":
         response.headers["Cache-Control"] = "no-store"
     return response
 
@@ -329,6 +330,18 @@ def home() -> HTMLResponse:
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok", "application": "virtue-wise"}
+
+
+@app.get("/ready")
+def readiness() -> dict[str, str]:
+    """Report readiness only when SQLite and the persisted model can be read."""
+    try:
+        store.check_database()
+    except store.StoreBusyError as exc:
+        raise HTTPException(status_code=503, detail="Project storage is busy.") from exc
+    except (sqlite3.Error, OSError, ValidationError, ValueError) as exc:
+        raise HTTPException(status_code=503, detail="Project storage is not ready.") from exc
+    return {"status": "ready", "storage": "ok"}
 
 
 @app.get("/api/model", response_model=ProjectModel)

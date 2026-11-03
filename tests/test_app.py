@@ -3,6 +3,7 @@
 import asyncio
 import json
 import os
+import sqlite3
 import stat
 import threading
 from concurrent.futures import ThreadPoolExecutor
@@ -36,6 +37,59 @@ def test_health_and_empty_model(tmp_path, monkeypatch):
     assert response.status_code == 200
     assert response.json()["schema_version"] == 1
     assert response.json()["statements"] == []
+
+
+def test_storage_readiness_reports_healthy_database_without_caching(tmp_path, monkeypatch):
+    client = test_client(tmp_path, monkeypatch)
+    store.save_model(store.load_model())
+
+    response = client.get("/ready")
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "ready", "storage": "ok"}
+    assert response.headers["cache-control"] == "no-store"
+
+
+def test_storage_readiness_rejects_corrupt_sqlite_and_model_payload(tmp_path, monkeypatch):
+    database = tmp_path / "readiness.sqlite3"
+    monkeypatch.setenv("VIRTUE_WISE_DB", str(database))
+    client = TestClient(app, raise_server_exceptions=False)
+    store.save_model(store.load_model())
+
+    connection = sqlite3.connect(database)
+    try:
+        connection.execute(
+            "UPDATE project_model SET payload = ? WHERE singleton = 1",
+            ("not valid JSON",),
+        )
+        connection.commit()
+    finally:
+        connection.close()
+    invalid_model = client.get("/ready")
+    assert invalid_model.status_code == 503
+    assert invalid_model.json() == {"detail": "Project storage is not ready."}
+    assert invalid_model.headers["cache-control"] == "no-store"
+    assert client.get("/health").json()["status"] == "ok"
+
+    database.write_bytes(b"not a SQLite database")
+    corrupt_database = client.get("/ready")
+    assert corrupt_database.status_code == 503
+    assert corrupt_database.json() == {"detail": "Project storage is not ready."}
+    assert client.get("/health").status_code == 200
+
+
+def test_storage_readiness_reports_busy_database_without_details(tmp_path, monkeypatch):
+    client = test_client(tmp_path, monkeypatch)
+
+    def busy():
+        raise store.StoreBusyError("internal database lock detail")
+
+    monkeypatch.setattr(store, "check_database", busy)
+    response = client.get("/ready")
+
+    assert response.status_code == 503
+    assert response.json() == {"detail": "Project storage is busy."}
+    assert "internal database lock detail" not in response.text
 
 
 def test_statement_and_hypothesis_provenance(tmp_path, monkeypatch):

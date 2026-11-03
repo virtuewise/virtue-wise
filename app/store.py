@@ -60,12 +60,16 @@ def _connect() -> sqlite3.Connection:
     path = database_path()
     _prepare_database_file(path)
     connection = sqlite3.connect(path, timeout=SQLITE_BUSY_TIMEOUT_SECONDS)
-    connection.execute(f"PRAGMA busy_timeout = {SQLITE_BUSY_TIMEOUT_SECONDS * 1000}")
-    connection.execute(
-        "CREATE TABLE IF NOT EXISTS project_model "
-        "(singleton INTEGER PRIMARY KEY CHECK (singleton = 1), payload TEXT NOT NULL)"
-    )
-    return connection
+    try:
+        connection.execute(f"PRAGMA busy_timeout = {SQLITE_BUSY_TIMEOUT_SECONDS * 1000}")
+        connection.execute(
+            "CREATE TABLE IF NOT EXISTS project_model "
+            "(singleton INTEGER PRIMARY KEY CHECK (singleton = 1), payload TEXT NOT NULL)"
+        )
+        return connection
+    except Exception:
+        connection.close()
+        raise
 
 
 def load_model() -> ProjectModel:
@@ -78,6 +82,20 @@ def load_model() -> ProjectModel:
     if row is None:
         return ProjectModel()
     return ProjectModel.model_validate_json(row[0])
+
+
+def check_database() -> None:
+    """Check SQLite integrity and validate the persisted model without writing it."""
+    connection = _connect()
+    try:
+        integrity = connection.execute("PRAGMA quick_check").fetchone()
+        if integrity is None or integrity[0] != "ok":
+            raise sqlite3.DatabaseError("Project database integrity check failed.")
+        row = connection.execute("SELECT payload FROM project_model WHERE singleton = 1").fetchone()
+        if row is not None:
+            ProjectModel.model_validate_json(row[0])
+    finally:
+        connection.close()
 
 
 def _revision_for_payload(payload: str) -> str:

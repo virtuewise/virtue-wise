@@ -24,6 +24,7 @@ The current local-first prototype includes:
 - **Scenario comparison:** create, edit, and delete alternatives with explicit assumptions and expected outcomes; compare them side by side without artificial scores.
 - **Portable data:** export JSON, import a validated model, and delete the saved local model.
 - **Quality checks:** automated API tests and CI for Python 3.12/3.13, Ruff, and Markdown linting.
+- **Operational readiness:** separate liveness (`/health`) and storage readiness (`/ready`) checks; readiness validates SQLite integrity and the saved model without returning project content.
 
 These are prototype capabilities, not claims of validated prediction or professional advice.
 
