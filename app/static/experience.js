@@ -21,7 +21,7 @@
       // The API maps provider outages and quota errors to 503 as well as local contention.
       // Preserve a provider-specific explanation instead of mislabelling it as a DB problem.
       if (response.status === 503 && typeof body.detail === "string" &&
-          !/project storage|another update|import capacity|already running/i.test(body.detail)) {
+          !/project storage|project database|database is busy|another update|import capacity|already running/i.test(body.detail)) {
         return response;
       }
       const headers = new Headers(response.headers);
