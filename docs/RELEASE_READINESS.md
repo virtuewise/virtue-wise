@@ -51,9 +51,9 @@ For database-level recovery, stop the application and preserve a copy of the dat
 
 ## Concurrency contract (current prototype)
 
-State-changing HTTP requests are serialized by a process-local lock. A request waits up to 10 seconds for the lock and receives HTTP 503 if another mutation remains in progress. SQLite commits each saved project row transactionally. Automated tests issue concurrent statement creates and verify that all updates remain present.
+Record-level statement, hypothesis, review, and scenario mutations now run inside a SQLite `BEGIN IMMEDIATE` transaction. The transaction acquires the database write reservation before loading the current model, applies the mutation, validates the full model, and commits the single-row update; exceptions roll back. SQLite's busy timeout is 10 seconds. If a competing writer holds the lock beyond that limit, the API returns HTTP 503 with a retry message. The existing process-local lock remains as an additional guard within one server process.
 
-This is deliberately a single-process control. The lock is not shared across Uvicorn workers, processes, hosts, or containers, and there is no revision/ETag compare-and-swap for stale clients. Run one application process only. Multi-worker or multi-instance deployment remains unsupported until a database-backed concurrency protocol and cross-process tests are implemented.
+The database transaction coordinates independent processes that share the same local SQLite file. It does not make SQLite suitable for a multi-host/network-filesystem deployment. Explicit full-model replacement (`PUT /api/model`) and import are intentional last-write-wins operations and do not yet use ETag/If-Match revision checks, so stale clients can still replace newer state. Keep the database on a local filesystem, retain the documented local-only deployment boundary, and do not claim multi-host or distributed operation. Regression tests exercise concurrent independent SQLite connections and rollback on callback failure.
 
 ## Rollback
 
