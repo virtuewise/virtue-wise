@@ -262,4 +262,19 @@ def test_two_browser_tabs_preserve_latest_revision_and_recover():
         ).click()
         expect(second.get_by_label("Project name")).to_have_value("Saved from first tab")
 
+        # A fresh browser process and context must recover the committed project.
         browser.close()
+        restarted_browser = playwright.chromium.launch()
+        restarted_context = restarted_browser.new_context(
+            viewport={"width": 1280, "height": 900}
+        )
+        restarted_page = restarted_context.new_page()
+        restarted_page.goto(BASE_URL, wait_until="networkidle")
+        expect(restarted_page.locator("#notice")).to_contain_text("Ready.")
+        restarted_page.locator("details").filter(
+            has_text="Edit project details manually"
+        ).locator("summary").click()
+        expect(restarted_page.get_by_label("Project name")).to_have_value(
+            "Saved from first tab"
+        )
+        restarted_browser.close()
