@@ -741,6 +741,33 @@ def test_import_rejects_stale_revision_without_replacing_model(tmp_path, monkeyp
     assert saved["statements"][0]["text"] == "A newer saved statement"
 
 
+def test_import_rejects_non_strong_or_malformed_if_match(tmp_path, monkeypatch):
+    client = test_client(tmp_path, monkeypatch)
+    quoted_revision = client.get("/api/model").headers["etag"]
+    invalid_headers = [
+        quoted_revision.strip('"'),
+        f"W/{quoted_revision}",
+        "*",
+        f"{quoted_revision}, {quoted_revision}",
+        '"not-a-valid-revision"',
+    ]
+
+    for value in invalid_headers:
+        imported = client.put(
+            "/api/import",
+            files={
+                "upload": (
+                    "replacement.json",
+                    b'{"schema_version": 1, "title": "Must not be imported"}',
+                    "application/json",
+                )
+            },
+            headers={"If-Match": value},
+        )
+        assert imported.status_code == 400
+        assert client.get("/api/model").json()["title"] == "Untitled project"
+
+
 def test_delete_responses_return_the_resulting_model_etag(tmp_path, monkeypatch):
     client = test_client(tmp_path, monkeypatch)
 
