@@ -12,6 +12,14 @@ The SQLite database, JSON exports, and SQLite snapshots contain the complete pro
 - Do not send project files to issue trackers, chat, logs, or public support channels.
 - The application does not encrypt the database or backup files. Filesystem permissions are not protection against a compromised host or another process running as the same user.
 
+## 2. Health and storage readiness
+
+- `GET /health` is a liveness response. It confirms that the HTTP application process can answer; it does not inspect the database.
+- `GET /ready` runs a SQLite quick integrity check and validates the persisted VIRTUE WISE model payload. It returns a generic HTTP 503 if storage is busy, unreadable, corrupt, or contains an invalid model. It does not expose database paths or stored project content and is marked `Cache-Control: no-store`.
+- After startup, restore, or an unexpected storage error, check both endpoints. A healthy liveness response with a failed readiness response means the process is running but the project store should not be treated as available. Preserve the database and investigate before attempting repair.
+
+These endpoints are operational signals, not authentication or network-deployment controls. Keep the application loopback-only.
+
 ## 2. Deletion and retention
 
 Deleting the active model and deleting its recovery copies are separate operations.
