@@ -11,6 +11,16 @@ DEFAULT_DB_PATH = Path("data/virtue-wise.sqlite3")
 SQLITE_BUSY_TIMEOUT_SECONDS = 10
 
 
+class StoreBusyError(RuntimeError):
+    """Raised when another process holds SQLite's write lock too long."""
+
+
+def _raise_if_database_busy(error: sqlite3.OperationalError) -> None:
+    message = str(error).lower()
+    if "locked" in message or "busy" in message:
+        raise StoreBusyError("The project database is busy. Retry the request.") from error
+
+
 def database_path() -> Path:
     """Resolve the database path, allowing tests and users to choose a location."""
     return Path(os.environ.get("VIRTUE_WISE_DB", str(DEFAULT_DB_PATH)))
@@ -55,6 +65,18 @@ def save_model(model: ProjectModel) -> ProjectModel:
         connection.execute("BEGIN IMMEDIATE")
         _write_model(connection, validated)
         connection.commit()
+    except sqlite3.OperationalError as exc:
+        connection.rollback()
+        _raise_if_database_busy(exc)
+        raise
+    except sqlite3.OperationalError as exc:
+        connection.rollback()
+        _raise_if_database_busy(exc)
+        raise
+    except sqlite3.OperationalError as exc:
+        connection.rollback()
+        _raise_if_database_busy(exc)
+        raise
     except Exception:
         connection.rollback()
         raise
