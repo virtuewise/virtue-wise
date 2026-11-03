@@ -37,6 +37,18 @@ python -m app.backup prune --keep 30
 
 The `create` command creates a snapshot, verifies it, and prunes older snapshots. It fails rather than creating an empty backup when the live database does not exist yet.
 
+## Check backup freshness for monitoring
+
+Run the health check after enabling the daily timer and from an external/local monitoring mechanism:
+
+```bash
+python -m app.backup check --max-age-hours 26
+```
+
+The command selects the newest managed snapshot by filesystem modification time, rejects a missing or over-age snapshot, and verifies the selected SQLite database and VIRTUE WISE model payload. It exits with status 0 only when the newest snapshot is both fresh and valid; missing, stale, future-dated, or corrupt newest snapshots return a non-zero status. A corrupt newest snapshot is not hidden by falling back to an older valid one. The default freshness window is 26 hours to allow for the daily timer's randomized delay and ordinary scheduling variance; set a stricter or looser threshold to match the actual schedule and recovery-point objective.
+
+The sample timer does not send alerts. Configure the host's monitoring/alerting system to run this command and notify an operator on a non-zero exit. A successful check proves only that the newest local snapshot currently exists, is within the configured age, and passes validation; it does not prove off-device replication, encryption, host integrity, or a successful restore. Continue periodic restore drills.
+
 After deleting project data, remove all managed local snapshots with `python -m app.backup purge --yes`. This is irreversible and deletes only `virtue-wise-*.sqlite3` files in the configured backup directory; it does not delete JSON exports, off-device copies, or backups on other hosts. Use it only after confirming no restore point is still needed.
 
 ## Schedule daily backups with systemd

@@ -60,7 +60,7 @@ pytest
 
 - Single local model in SQLite; record-level edits use database write transactions across independent local processes. Full-model replacement and import require an `If-Match` revision from the latest model read and reject stale clients with HTTP 412. Keep the database on a local filesystem; multi-host operation is unsupported. Imports have a 2.1 MB request-body cap, 30-second body-read timeout, and two-request per-process concurrency limit; upstream ingress limits are still required.
 - No authentication, authorization, sessions, encryption at rest, or session-bound CSRF tokens. Basic request-origin and Host checks are defense in depth, not production hardening.
-- A verified SQLite backup CLI and sample daily systemd timer are provided, but scheduling must be installed by the operator; backups are not encrypted by the app.
+- A verified SQLite backup CLI, backup freshness/integrity health check (`python -m app.backup check`), and sample daily systemd timer are provided, but scheduling and monitoring/alerting must be configured by the operator; backups are not encrypted by the app.
 - JSON import supports the current schema version only; migrations are not implemented.
 - Scenario comparison is qualitative, not a prediction engine.
 - Editing uses native HTML dialog forms with labels, validation, save/cancel controls, and visible error feedback.

@@ -4,6 +4,7 @@ import os
 import sqlite3
 import stat
 import sys
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -92,6 +93,69 @@ def test_backup_flushes_staging_file_before_publish_and_directory_after(tmp_path
         assert events[2] == "directory-fsync"
     else:
         assert events == ["file-fsync", "replace"]
+
+
+def test_backup_health_check_accepts_a_fresh_verified_snapshot(tmp_path, monkeypatch):
+    configure_paths(tmp_path, monkeypatch)
+    store.save_model(ProjectModel(title="Fresh backup"))
+    snapshot = backup.create_backup()
+    now = datetime.fromtimestamp(snapshot.stat().st_mtime, UTC) + timedelta(hours=1)
+
+    assert backup.check_latest_backup(max_age_hours=26, now=now) == snapshot.resolve()
+
+
+def test_backup_health_check_rejects_a_stale_snapshot(tmp_path, monkeypatch):
+    configure_paths(tmp_path, monkeypatch)
+    store.save_model(ProjectModel(title="Stale backup"))
+    snapshot = backup.create_backup()
+    now = datetime.now(UTC)
+    stale_timestamp = (now - timedelta(hours=27)).timestamp()
+    os.utime(snapshot, (stale_timestamp, stale_timestamp))
+
+    with pytest.raises(ValueError, match="stale"):
+        backup.check_latest_backup(max_age_hours=26, now=now)
+
+
+def test_backup_health_check_rejects_a_corrupt_newest_snapshot(tmp_path, monkeypatch):
+    _, backups = configure_paths(tmp_path, monkeypatch)
+    store.save_model(ProjectModel(title="Older valid backup"))
+    backup.create_backup()
+    corrupt = backups / "virtue-wise-99999999T999999999999Z.sqlite3"
+    corrupt.write_bytes(b"not a SQLite database")
+    now = datetime.now(UTC) + timedelta(seconds=2)
+    modified = (now - timedelta(seconds=1)).timestamp()
+    os.utime(corrupt, (modified, modified))
+
+    with pytest.raises(ValueError, match="not a readable"):
+        backup.check_latest_backup(max_age_hours=26, now=now)
+
+
+def test_backup_health_check_rejects_missing_future_and_invalid_clock(tmp_path, monkeypatch):
+    configure_paths(tmp_path, monkeypatch)
+    with pytest.raises(FileNotFoundError, match="No managed"):
+        backup.check_latest_backup()
+
+    store.save_model(ProjectModel(title="Future backup"))
+    snapshot = backup.create_backup()
+    future = datetime.fromtimestamp(snapshot.stat().st_mtime, UTC) - timedelta(minutes=1)
+    with pytest.raises(ValueError, match="future"):
+        backup.check_latest_backup(now=future)
+    with pytest.raises(ValueError, match="timezone-aware"):
+        backup.check_latest_backup(now=datetime.now())
+    with pytest.raises(ValueError, match="finite number"):
+        backup.check_latest_backup(max_age_hours=float("inf"))
+
+
+def test_backup_health_check_cli_returns_success_for_a_fresh_snapshot(
+    tmp_path, monkeypatch, capsys
+):
+    configure_paths(tmp_path, monkeypatch)
+    store.save_model(ProjectModel(title="Monitored backup"))
+    backup.create_backup()
+    monkeypatch.setattr(sys, "argv", ["app.backup", "check", "--max-age-hours", "26"])
+
+    assert backup.main() == 0
+    assert "fresh and verified" in capsys.readouterr().out
 
 
 def test_backup_retention_keeps_newest_snapshots(tmp_path, monkeypatch):
