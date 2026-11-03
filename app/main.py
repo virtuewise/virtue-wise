@@ -233,7 +233,10 @@ def save_validated_model(model: ProjectModel) -> ProjectModel:
         validated = ProjectModel.model_validate(model.model_dump(mode="python"))
     except ValidationError as exc:
         raise HTTPException(status_code=422, detail="Model failed integrity validation.") from exc
-    return store.save_model(validated)
+    try:
+        return store.save_model(validated)
+    except store.StoreBusyError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 
 def mutate_validated_model(mutator) -> ProjectModel:
@@ -242,6 +245,8 @@ def mutate_validated_model(mutator) -> ProjectModel:
         return store.mutate_model(mutator)
     except ValidationError as exc:
         raise HTTPException(status_code=422, detail="Model failed integrity validation.") from exc
+    except store.StoreBusyError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
