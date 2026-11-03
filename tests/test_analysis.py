@@ -128,9 +128,6 @@ def test_analysis_requires_explicit_local_processing_consent(tmp_path, monkeypat
 
 
 def test_analysis_status_does_not_fail_when_local_model_is_absent(monkeypatch):
-    def unavailable():
-        raise analysis.AnalysisUnavailable("not running")
-
     monkeypatch.setattr(
         analysis,
         "list_provider_catalog",
