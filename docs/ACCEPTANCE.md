@@ -49,8 +49,11 @@ This section requires Ollama and at least one locally installed model. It is opt
 - [ ] Check at narrow mobile width and at 200% zoom.
 - [ ] Confirm long user-provided text wraps without horizontal page scrolling.
 - [ ] Open the same workspace in two tabs, save in one, then attempt a stale edit in the other; confirm no overwrite occurs and the one-click reload action restores the latest saved state.
+- [ ] Close the browser completely, reopen it against the same local instance, and verify the saved project title, statements, evidence links, review state, and scenarios are still present.
+- [ ] Stop and restart the local application process against the same database; verify the same records and links recover without relying on browser cache.
 - [ ] Simulate provider rate limits and an unavailable provider; confirm errors remain distinct from local database contention and the saved workspace remains usable.
 - [ ] Complete the real-provider checklist in [AI_PROVIDER_ACCEPTANCE.md](AI_PROVIDER_ACCEPTANCE.md) separately for each configured provider.
+- [ ] Run the independent-process SQLite recovery and concurrent-writer regression tests before release.
 - [ ] Confirm native edit dialogs expose clear labels and validation errors, move focus appropriately, and cancel safely.
 
 ## Sign-off
