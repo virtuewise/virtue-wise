@@ -1,10 +1,11 @@
 """Browser-level acceptance checks for the local VIRTUE WISE workflow."""
 
+import os
 from pathlib import Path
 
-from playwright.sync_api import Page, expect, sync_playwright
+from playwright.sync_api import expect, sync_playwright
 
-BASE_URL = "http://127.0.0.1:8000"
+BASE_URL = os.environ.get("VIRTUE_WISE_BASE_URL", "http://127.0.0.1:8000")
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -17,6 +18,16 @@ def test_core_workflow_and_responsive_layout():
         page.on("dialog", lambda dialog: dialog.accept())
         page.goto(BASE_URL, wait_until="networkidle")
         expect(page.locator("#notice")).to_contain_text("Ready.")
+
+        # Interactive controls must expose a usable accessible name.
+        unnamed_buttons = page.locator("button").evaluate_all(
+            "(items) => items.filter((item) => !(item.innerText.trim() || item.getAttribute('aria-label') || item.getAttribute('title'))).length"
+        )
+        assert unnamed_buttons == 0
+        unnamed_fields = page.locator("input:not([type=hidden]), select, textarea").evaluate_all(
+            "(items) => items.filter((item) => !(item.labels?.length || item.getAttribute('aria-label') || item.getAttribute('aria-labelledby'))).map((item) => item.id || item.outerHTML.slice(0, 120))"
+        )
+        assert not unnamed_fields, f"Controls without accessible labels: {unnamed_fields}"
 
         # Project edits persist across a full page reload.
         page.get_by_label("Project name").fill("Browser acceptance project")
@@ -68,6 +79,10 @@ def test_core_workflow_and_responsive_layout():
             "Meetings may be shorter; some topics may move to follow-up."
         )
         page.get_by_role("button", name="Add scenario").click()
+        expect(page.get_by_label("Scenario name")).to_be_disabled()
+        expect(page.get_by_role("button", name="Add scenario")).to_be_disabled()
+        expect(page.locator(".scenario-card")).to_have_count(1)
+        expect(page.get_by_label("Scenario name")).to_be_enabled()
         page.get_by_label("Scenario name").fill("Keep current agenda")
         page.get_by_label("Assumptions (one per line)").fill("All topics remain necessary.")
         page.get_by_label("Expected outcome and trade-offs").fill(
