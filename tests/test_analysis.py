@@ -89,7 +89,9 @@ def test_analysis_uses_structured_local_output_and_filters_unknown_evidence(monk
     )
     monkeypatch.setattr(analysis, "build_opener", lambda *_args: opener)
 
-    result = analysis.create_analysis_draft("Explore planning delays.", "ollama", "qwen3:8b", project)
+    result = analysis.create_analysis_draft(
+        "Explore planning delays.", "ollama", "qwen3:8b", project
+    )
 
     assert result.hypotheses[0].evidence_statement_ids == [statement.id]
     assert any("unrecognized evidence reference" in warning for warning in result.warnings)
@@ -132,7 +134,13 @@ def test_analysis_status_does_not_fail_when_local_model_is_absent(monkeypatch):
         analysis,
         "list_provider_catalog",
         lambda: [
-            {"id": "ollama", "label": "Ollama", "available": False, "models": [], "note": ""}
+            {
+                "id": "ollama",
+                "label": "Ollama",
+                "available": False,
+                "models": [],
+                "note": "",
+            }
         ],
     )
     response = TestClient(app).get("/api/analysis/status")
@@ -196,10 +204,16 @@ def test_openrouter_catalog_only_lists_zero_price_models(monkeypatch):
         "_request_provider_json",
         lambda *_args, **_kwargs: {
             "data": [
-                {"id": "vendor/free-model:free", "name": "Free model",
-                 "pricing": {"prompt": "0", "completion": "0"}},
-                {"id": "vendor/paid-model", "name": "Paid model",
-                 "pricing": {"prompt": "0.000001", "completion": "0.000002"}},
+                {
+                    "id": "vendor/free-model:free",
+                    "name": "Free model",
+                    "pricing": {"prompt": "0", "completion": "0"},
+                },
+                {
+                    "id": "vendor/paid-model",
+                    "name": "Paid model",
+                    "pricing": {"prompt": "0.000001", "completion": "0.000002"},
+                },
                 {"id": "vendor/unknown-price", "pricing": {}},
             ]
         },
