@@ -453,8 +453,7 @@ def test_import_rejects_invalid_utf8_and_malformed_json_without_replacing_model(
 
 def test_import_rejects_duplicate_keys_and_nonstandard_json_numbers(tmp_path, monkeypatch):
     client = test_client(tmp_path, monkeypatch)
-    put_with_revision(
-        client, "/api/model",
+    put_with_revision(client, "/api/model", json={"title": "Keep this model"})
     invalid_payloads = [
         b'{"schema_version": 1, "title": "first", "title": "second"}',
         b'{"schema_version": 1, "goal": NaN}',
