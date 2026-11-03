@@ -49,31 +49,31 @@ class StrictModel(pydantic.BaseModel):
 
 class HypothesisSuggestion(StrictModel):
     claim: str = pydantic.Field(min_length=1, max_length=2000)
-    rationale: str = Field(default="", max_length=2000)
-    evidence_statement_ids: list[str] = Field(default_factory=list, max_length=100)
-    counterpoints: list[str] = Field(default_factory=list, max_length=5)
+    rationale: str = pydantic.Field(default="", max_length=2000)
+    evidence_statement_ids: list[str] = pydantic.Field(default_factory=list, max_length=100)
+    counterpoints: list[str] = pydantic.Field(default_factory=list, max_length=5)
 
 
 class ExperimentSuggestion(StrictModel):
-    question: str = Field(min_length=1, max_length=1000)
-    method: str = Field(min_length=1, max_length=2000)
-    limitations: str = Field(default="", max_length=1000)
+    question: str = pydantic.Field(min_length=1, max_length=1000)
+    method: str = pydantic.Field(min_length=1, max_length=2000)
+    limitations: str = pydantic.Field(default="", max_length=1000)
 
 
 class ScenarioSuggestion(StrictModel):
-    name: str = Field(min_length=1, max_length=200)
-    assumptions: list[str] = Field(default_factory=list, max_length=20)
-    expected_outcome: str = Field(default="", max_length=2000)
+    name: str = pydantic.Field(min_length=1, max_length=200)
+    assumptions: list[str] = pydantic.Field(default_factory=list, max_length=20)
+    expected_outcome: str = pydantic.Field(default="", max_length=2000)
 
 
 class AnalysisDraft(StrictModel):
-    summary: str = Field(default="", max_length=2000)
-    hypotheses: list[HypothesisSuggestion] = Field(default_factory=list, max_length=10)
-    missing_information: list[str] = Field(default_factory=list, max_length=10)
-    questions: list[str] = Field(default_factory=list, max_length=10)
-    experiments: list[ExperimentSuggestion] = Field(default_factory=list, max_length=10)
-    scenarios: list[ScenarioSuggestion] = Field(default_factory=list, max_length=5)
-    warnings: list[str] = Field(default_factory=list, max_length=20)
+    summary: str = pydantic.Field(default="", max_length=2000)
+    hypotheses: list[HypothesisSuggestion] = pydantic.Field(default_factory=list, max_length=10)
+    missing_information: list[str] = pydantic.Field(default_factory=list, max_length=10)
+    questions: list[str] = pydantic.Field(default_factory=list, max_length=10)
+    experiments: list[ExperimentSuggestion] = pydantic.Field(default_factory=list, max_length=10)
+    scenarios: list[ScenarioSuggestion] = pydantic.Field(default_factory=list, max_length=5)
+    warnings: list[str] = pydantic.Field(default_factory=list, max_length=20)
 
 
 def _reject_json_constant(value):
