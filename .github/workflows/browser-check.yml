@@ -70,53 +70,39 @@ jobs:
           python -m pip install -e ".[dev]"
           python -m pip install "playwright>=1.50,<2"
           python -m playwright install chromium
-      - name: Start isolated local application
+      - name: Run browser acceptance tests with isolated local application
         env:
           VIRTUE_WISE_DB: ${{ runner.temp }}\virtue-wise-browser-test.sqlite3
+          VIRTUE_WISE_BASE_URL: http://127.0.0.1:8000
         run: |
           $stdout = Join-Path $env:RUNNER_TEMP "virtue-wise-uvicorn.stdout.log"
           $stderr = Join-Path $env:RUNNER_TEMP "virtue-wise-uvicorn.stderr.log"
-          $pidFile = Join-Path $env:RUNNER_TEMP "virtue-wise-uvicorn.pid"
           $process = Start-Process -FilePath "python" -ArgumentList @(
             "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", "8000"
           ) -PassThru -WindowStyle Hidden -RedirectStandardOutput $stdout -RedirectStandardError $stderr
-          $process.Id | Set-Content $pidFile
-          $ready = $false
-          for ($attempt = 0; $attempt -lt 30; $attempt++) {
-            if ($process.HasExited) {
-              break
-            }
-            try {
-              $response = Invoke-WebRequest -Uri "http://127.0.0.1:8000/health" -TimeoutSec 2
-              if ($response.StatusCode -eq 200) {
-                $ready = $true
-                break
+          try {
+            $ready = $false
+            for ($attempt = 0; $attempt -lt 30; $attempt++) {
+              if ($process.HasExited) { break }
+              try {
+                $response = Invoke-WebRequest -Uri "http://127.0.0.1:8000/health" -TimeoutSec 2
+                if ($response.StatusCode -eq 200) {
+                  $ready = $true
+                  break
+                }
+              } catch {
+                Start-Sleep -Seconds 1
               }
-            } catch {
-              Start-Sleep -Seconds 1
             }
-          }
-          if (-not $ready) {
+            if (-not $ready) { throw "The isolated local application did not become ready." }
+            python -m pytest -q browser_tests
+            if ($LASTEXITCODE -ne 0) { throw "Browser acceptance tests failed with exit code $LASTEXITCODE." }
+          } catch {
             if (Test-Path $stdout) { Get-Content $stdout }
             if (Test-Path $stderr) { Get-Content $stderr }
-            throw "The isolated local application did not become ready."
-          }
-      - name: Run browser acceptance tests
-        env:
-          VIRTUE_WISE_BASE_URL: http://127.0.0.1:8000
-        run: python -m pytest -q browser_tests
-      - name: Show application log on failure
-        if: failure()
-        run: |
-          $stdout = Join-Path $env:RUNNER_TEMP "virtue-wise-uvicorn.stdout.log"
-          $stderr = Join-Path $env:RUNNER_TEMP "virtue-wise-uvicorn.stderr.log"
-          if (Test-Path $stdout) { Get-Content $stdout }
-          if (Test-Path $stderr) { Get-Content $stderr }
-      - name: Stop local application
-        if: always()
-        run: |
-          $pidFile = Join-Path $env:RUNNER_TEMP "virtue-wise-uvicorn.pid"
-          if (Test-Path $pidFile) {
-            $processId = [int](Get-Content $pidFile)
-            Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue
+            throw
+          } finally {
+            if ($process -and -not $process.HasExited) {
+              Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+            }
           }
