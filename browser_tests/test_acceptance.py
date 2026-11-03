@@ -179,7 +179,9 @@ def test_core_workflow_and_responsive_layout():
         expect(page.locator(".scenario-card")).to_have_count(2)
 
         # Stale browser edits receive a clear recovery instruction, never an overwrite.
-        page.locator("details").filter(has_text="Edit project details manually").locator("summary").click()
+        project_details = page.locator("details").filter(has_text="Edit project details manually")
+        if not project_details.evaluate("(element) => element.open"):
+            project_details.locator("summary").click()
         page.get_by_label("Project name").fill("Stale tab edit")
         page.route("**/api/model", lambda route: route.fulfill(
             status=412, content_type="application/json", body='{"detail":"stale revision"}'
