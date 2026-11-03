@@ -695,9 +695,7 @@ def test_full_model_replacement_requires_current_revision(tmp_path, monkeypatch)
     assert client.get("/api/model").json()["title"] == "Current project"
 
 
-def test_full_model_replacement_rejects_non_strong_or_malformed_if_match(
-    tmp_path, monkeypatch
-):
+def test_full_model_replacement_rejects_non_strong_or_malformed_if_match(tmp_path, monkeypatch):
     client = test_client(tmp_path, monkeypatch)
     current = client.get("/api/model")
     quoted_revision = current.headers["etag"]
@@ -705,7 +703,7 @@ def test_full_model_replacement_rejects_non_strong_or_malformed_if_match(
 
     invalid_headers = [
         unquoted_revision,
-        f'W/{quoted_revision}',
+        f"W/{quoted_revision}",
         "*",
         f"{quoted_revision}, {quoted_revision}",
         '"not-a-valid-revision"',
