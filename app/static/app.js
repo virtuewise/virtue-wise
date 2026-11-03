@@ -762,7 +762,6 @@ function showIntakeDraft(draft) {
           statements: [...model.statements, ...statements],
         };
         model = await request("/api/model", { method: "PUT", body: JSON.stringify(nextModel) });
-        byId("intake-text").value = "";
         preview.hidden = true;
         preview.replaceChildren();
         intakeDraft = null;
