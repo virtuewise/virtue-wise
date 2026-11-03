@@ -1,6 +1,8 @@
 """Tests for verified SQLite backups and safe restore behavior."""
 
+import os
 import sqlite3
+import stat
 import sys
 
 import pytest
@@ -132,3 +134,13 @@ def test_purge_cli_deletes_managed_snapshots_after_confirmation(tmp_path, monkey
 
     assert backup.main() == 0
     assert not snapshot.exists()
+
+
+@pytest.mark.skipif(os.name != "posix", reason="POSIX mode bits are not portable to Windows ACLs")
+def test_new_backup_directory_is_private(tmp_path, monkeypatch):
+    _, backups = configure_paths(tmp_path, monkeypatch)
+    store.save_model(ProjectModel(title="Private backup directory"))
+
+    backup.create_backup()
+
+    assert stat.S_IMODE(backups.stat().st_mode) == 0o700
