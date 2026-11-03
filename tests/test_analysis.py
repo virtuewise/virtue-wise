@@ -234,7 +234,7 @@ def test_provider_self_test_uses_only_fictional_context(monkeypatch):
         "ok": True,
         "provider": "ollama",
         "model": "qwen3:8b",
-        "summary": expected.summary,
+        "structured_response": True,
         "hypothesis_count": 1,
     }
     assert len(calls) == 1
