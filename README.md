@@ -100,6 +100,7 @@ Contributions are welcome across engineering, research, product design, accessib
 | [Architecture](docs/ARCHITECTURE.md) | Implementation, boundaries, and known limitations |
 | [Acceptance walkthrough](docs/ACCEPTANCE.md) | Manual workflow and accessibility checklist |
 | [Model evaluation protocol](docs/MODEL_EVALUATION.md) | Evidence-based criteria for deciding whether to expand the data model |
+| [Live AI provider acceptance](docs/AI_PROVIDER_ACCEPTANCE.md) | Manual real-provider success, failure, rate-limit, and recovery verification |
 | [Brand guide](docs/BRAND.md) | Visual identity and documentation standards |
 | [Roadmap](ROADMAP.md) | Proposed milestones |
 | [Contributing](CONTRIBUTING.md) | Contribution workflow |
