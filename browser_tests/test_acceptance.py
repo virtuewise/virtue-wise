@@ -40,7 +40,7 @@ def test_core_workflow_and_responsive_layout():
         expect(page.locator("#notice")).to_have_attribute("role", "status")
 
         # Conversational intake creates a reviewable draft, saves once, and persists.
-        intake_text = "Explore planning delays\\n\\nThe team observed two meetings running over time."
+        intake_text = "Explore planning delays\n\nThe team observed two meetings running over time."
         page.locator("#intake-text").fill(intake_text)
         page.get_by_role("button", name="Build my starting workspace").click()
         expect(page.locator("#intake-preview")).to_be_visible()
