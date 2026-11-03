@@ -249,7 +249,7 @@ def test_provider_smoke_test_sends_only_fictional_sample():
                 content_type="application/json",
                 body=(
                     '{"ok":true,"provider":"ollama","model":"qwen3:8b",'
-                    '"summary":"Fictional sample processed.","hypothesis_count":1}'
+                    '"structured_response":true,"hypothesis_count":1}'
                 ),
             )
 
