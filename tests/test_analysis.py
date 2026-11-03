@@ -334,3 +334,53 @@ def test_analysis_status_lists_provider_catalog_without_exposing_secrets(monkeyp
     assert response.json()["providers"] == catalog
     assert "do-not-return-this" not in response.text
 
+
+
+
+def test_openrouter_analysis_uses_selected_free_model_and_bounded_json_output(monkeypatch):
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-openrouter-key")
+    monkeypatch.setattr(
+        analysis,
+        "_openrouter_free_models",
+        lambda _key: [
+            {"id": "vendor/model:free", "label": "Free model", "free": True}
+        ],
+    )
+    calls = []
+
+    def fake_request(url, payload=None, *, headers=None, timeout=None, method=None):
+        calls.append((url, payload, headers, timeout, method))
+        return {
+            "choices": [
+                {
+                    "message": {
+                        "content": json.dumps(
+                            {
+                                "summary": "A tentative analysis.",
+                                "hypotheses": [],
+                                "missing_information": [],
+                                "questions": [],
+                                "experiments": [],
+                                "scenarios": [],
+                            }
+                        )
+                    }
+                }
+            ]
+        }
+
+    monkeypatch.setattr(analysis, "_request_provider_json", fake_request)
+
+    result = analysis.create_analysis_draft(
+        "Try to understand this.", "openrouter", "vendor/model:free", ProjectModel()
+    )
+
+    assert result.summary == "A tentative analysis."
+    url, payload, headers, timeout, method = calls[0]
+    assert url == analysis.OPENROUTER_CHAT_URL
+    assert payload["model"] == "vendor/model:free"
+    assert payload["max_tokens"] == 4096
+    assert payload["response_format"] == {"type": "json_object"}
+    assert headers == {"Authorization": "Bearer test-openrouter-key"}
+    assert timeout == analysis.ANALYSIS_TIMEOUT_SECONDS
+    assert method is None
