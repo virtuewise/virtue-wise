@@ -6,7 +6,8 @@ VIRTUE WISE includes a local SQLite snapshot tool and a sample systemd timer. Th
 
 - Uses SQLite's online backup API to create a consistent database snapshot, including while the app is running.
 - Verifies SQLite integrity and validates the stored VIRTUE WISE model before publishing the snapshot.
-- Writes snapshots atomically and restricts backup files to owner read/write permissions where supported (0600).
+- Creates new backup directories with POSIX mode `0700` and pre-creates backup/restore staging files with mode `0600` before SQLite writes to them; published snapshots are also restricted to owner read/write permissions where supported.
+- Does not change permissions on an existing custom backup directory. Ensure custom directories are private; Windows relies on inherited filesystem ACLs.
 - Retains the newest 30 snapshots by default.
 - Verifies a selected snapshot before restore and preserves the current database as a pre-restore snapshot before replacing it.
 - Does not encrypt backups. Protect the backup directory with OS permissions and an encrypted disk/volume; keep an additional copy on a separate protected device if the data matters.
@@ -21,7 +22,7 @@ VIRTUE_WISE_BACKUP_DIR=/var/backups/virtue-wise
 VIRTUE_WISE_BACKUP_RETENTION_COUNT=30
 ```
 
-The default backup directory is a `backups` folder beside the configured database. For better recovery, configure a dedicated directory on a different volume from the live database. Backups contain the complete project and should be treated as sensitive.
+The default backup directory is a `backups` folder beside the configured database. For better recovery, configure a dedicated directory on a different volume from the live database. Backups contain the complete project and should be treated as sensitive. The tool creates a new backup directory with POSIX mode `0700` and staging/snapshot files with `0600`; existing custom directories are not changed and must be protected by the operator. Windows uses host filesystem ACLs.
 
 ## Run a backup manually
 

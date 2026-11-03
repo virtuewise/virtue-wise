@@ -17,6 +17,12 @@ BACKUP_PREFIX = "virtue-wise-"
 DEFAULT_RETENTION_COUNT = 30
 
 
+def _create_private_sqlite_file(path: Path) -> None:
+    """Pre-create a SQLite staging file with owner-only POSIX mode bits."""
+    descriptor = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+    os.close(descriptor)
+
+
 def backup_directory() -> Path:
     """Resolve the backup directory independently from the live database."""
     default = database_path().parent / "backups"
@@ -98,12 +104,13 @@ def create_backup(keep: int | None = None, protect: tuple[Path, ...] = ()) -> Pa
         raise ValueError("Backup retention count must be at least 1.")
 
     directory = backup_directory()
-    directory.mkdir(parents=True, exist_ok=True)
+    directory.mkdir(parents=True, exist_ok=True, mode=0o700)
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S%fZ")
     destination = directory / f"{BACKUP_PREFIX}{stamp}.sqlite3"
     temporary = directory / f".{destination.name}.{uuid4().hex}.tmp"
 
     try:
+        _create_private_sqlite_file(temporary)
         source = sqlite3.connect(source_path, timeout=10)
         try:
             target = sqlite3.connect(temporary)
@@ -137,10 +144,11 @@ def restore_backup(path: str | Path) -> tuple[Path, Path | None]:
     if source_path == target_path.resolve():
         raise ValueError("The live database cannot be used as its own restore source.")
 
-    target_path.parent.mkdir(parents=True, exist_ok=True)
+    target_path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     pre_restore = create_backup(protect=(source_path,)) if target_path.is_file() else None
     temporary = target_path.with_name(f".{target_path.name}.{uuid4().hex}.restore")
     try:
+        _create_private_sqlite_file(temporary)
         source = sqlite3.connect(f"{source_path.as_uri()}?mode=ro", uri=True)
         try:
             target = sqlite3.connect(temporary)
