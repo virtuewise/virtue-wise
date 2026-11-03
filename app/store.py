@@ -60,12 +60,16 @@ def _connect() -> sqlite3.Connection:
     path = database_path()
     _prepare_database_file(path)
     connection = sqlite3.connect(path, timeout=SQLITE_BUSY_TIMEOUT_SECONDS)
-    connection.execute(f"PRAGMA busy_timeout = {SQLITE_BUSY_TIMEOUT_SECONDS * 1000}")
-    connection.execute(
-        "CREATE TABLE IF NOT EXISTS project_model "
-        "(singleton INTEGER PRIMARY KEY CHECK (singleton = 1), payload TEXT NOT NULL)"
-    )
-    return connection
+    try:
+        connection.execute(f"PRAGMA busy_timeout = {SQLITE_BUSY_TIMEOUT_SECONDS * 1000}")
+        connection.execute(
+            "CREATE TABLE IF NOT EXISTS project_model "
+            "(singleton INTEGER PRIMARY KEY CHECK (singleton = 1), payload TEXT NOT NULL)"
+        )
+        return connection
+    except Exception:
+        connection.close()
+        raise
 
 
 def load_model() -> ProjectModel:
