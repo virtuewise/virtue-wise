@@ -6,7 +6,7 @@ VIRTUE WISE explores ways to help people connect information, understand the bas
 
 > **Core idea:** move beyond answers alone toward understanding that can be examined, corrected, and used.
 
-[Vision](docs/VISION.md) · [Prototype plan](docs/PROTOTYPE.md) · [Architecture](docs/ARCHITECTURE.md) · [Acceptance walkthrough](docs/ACCEPTANCE.md) · [Model evaluation protocol](docs/MODEL_EVALUATION.md) · [Optional local AI](docs/LOCAL_AI.md) · [Threat model](docs/THREAT_MODEL.md) · [Authentication design](docs/AUTHENTICATION_DESIGN.md) · [Import security](docs/IMPORT_SECURITY.md) · [Backup operations](docs/BACKUP_OPERATIONS.md) · [Release and recovery](docs/RELEASE_READINESS.md) · [Operations runbook](docs/OPERATIONS_RUNBOOK.md) · [Roadmap](ROADMAP.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
+[Vision](docs/VISION.md) · [Prototype plan](docs/PROTOTYPE.md) · [Architecture](docs/ARCHITECTURE.md) · [Acceptance walkthrough](docs/ACCEPTANCE.md) · [Model evaluation protocol](docs/MODEL_EVALUATION.md) · [AI providers and free models](docs/LOCAL_AI.md) · [Threat model](docs/THREAT_MODEL.md) · [Authentication design](docs/AUTHENTICATION_DESIGN.md) · [Import security](docs/IMPORT_SECURITY.md) · [Backup operations](docs/BACKUP_OPERATIONS.md) · [Release and recovery](docs/RELEASE_READINESS.md) · [Operations runbook](docs/OPERATIONS_RUNBOOK.md) · [Roadmap](ROADMAP.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
 
 ## Why this project
 
@@ -19,7 +19,7 @@ VIRTUE WISE is an open-source effort to investigate that foundation. It is not t
 The current local-first prototype includes:
 
 - **Conversational-first intake:** describe an idea, challenge, opportunity, or decision in one free-form prompt; preview a suggested project title, preserve the original description, and save extracted user-provided statements in one reviewable action.
-- **Optional local AI analysis:** connect to Ollama on the same computer, with explicit per-analysis consent, to draft hypotheses, counterpoints, missing information, questions, experiments, and alternative scenarios. Suggestions are validated, labelled as unverified, and require human review.
+- **Optional multi-provider AI analysis:** use local Ollama, zero-priced OpenRouter models, free models configured through a local OpenCode server, or an explicitly configured OpenAI-compatible endpoint. Each run requires consent; model suggestions are validated, labelled as unverified, and require human review.
 - **Guided reflection:** surface general questions about assumptions, evidence, missing information, and what could change a user's view. These are deterministic prompts, not AI findings.
 - **Statements and provenance:** create, edit, and delete user-provided statements with source labels and optional excerpts.
 - **Hypothesis review:** create and edit hypotheses, link them to statements, set qualitative uncertainty, and accept, revise, or reject with a review note.
@@ -47,9 +47,9 @@ Open <http://127.0.0.1:8000>. API documentation is available at <http://127.0.0.
 
 By default, SQLite data is stored at `data/virtue-wise.sqlite3`. Set `VIRTUE_WISE_DB` to use another path. On POSIX systems, newly created data directories use mode `0700` and the live database file uses `0600`; an existing custom parent directory is not changed, so ensure it is private. On Windows, protect the database with the host's filesystem ACLs. The application has no authentication or encryption at rest: keep it bound to localhost and do not enter sensitive data.
 
-## Optional local AI analysis
+## Optional multi-provider AI analysis
 
-See [local AI setup and data handling](docs/LOCAL_AI.md) for Windows installation, model selection, consent, local-only data flow, and limitations. This feature is optional and does not send project data to a cloud AI provider.
+See [AI provider setup and data handling](docs/LOCAL_AI.md) for Windows installation, OpenRouter free models, OpenCode integration, provider configuration, consent, and privacy limitations. Ollama stays local; OpenRouter and other hosted providers receive content only after explicit consent.
 
 ## Backups
 
