@@ -695,6 +695,31 @@ def test_full_model_replacement_requires_current_revision(tmp_path, monkeypatch)
     assert client.get("/api/model").json()["title"] == "Current project"
 
 
+def test_full_model_replacement_rejects_non_strong_or_malformed_if_match(
+    tmp_path, monkeypatch
+):
+    client = test_client(tmp_path, monkeypatch)
+    current = client.get("/api/model")
+    quoted_revision = current.headers["etag"]
+    unquoted_revision = quoted_revision.strip('"')
+
+    invalid_headers = [
+        unquoted_revision,
+        f'W/{quoted_revision}',
+        "*",
+        f"{quoted_revision}, {quoted_revision}",
+        '"not-a-valid-revision"',
+    ]
+    for value in invalid_headers:
+        response = client.put(
+            "/api/model",
+            json={"title": "Must not be saved"},
+            headers={"If-Match": value},
+        )
+        assert response.status_code == 400
+        assert client.get("/api/model").json()["title"] == "Untitled project"
+
+
 def test_import_rejects_stale_revision_without_replacing_model(tmp_path, monkeypatch):
     client = test_client(tmp_path, monkeypatch)
     stale_revision = client.get("/api/model").headers["etag"]
@@ -716,6 +741,33 @@ def test_import_rejects_stale_revision_without_replacing_model(tmp_path, monkeyp
     saved = client.get("/api/model").json()
     assert saved["title"] == "Untitled project"
     assert saved["statements"][0]["text"] == "A newer saved statement"
+
+
+def test_import_rejects_non_strong_or_malformed_if_match(tmp_path, monkeypatch):
+    client = test_client(tmp_path, monkeypatch)
+    quoted_revision = client.get("/api/model").headers["etag"]
+    invalid_headers = [
+        quoted_revision.strip('"'),
+        f"W/{quoted_revision}",
+        "*",
+        f"{quoted_revision}, {quoted_revision}",
+        '"not-a-valid-revision"',
+    ]
+
+    for value in invalid_headers:
+        imported = client.put(
+            "/api/import",
+            files={
+                "upload": (
+                    "replacement.json",
+                    b'{"schema_version": 1, "title": "Must not be imported"}',
+                    "application/json",
+                )
+            },
+            headers={"If-Match": value},
+        )
+        assert imported.status_code == 400
+        assert client.get("/api/model").json()["title"] == "Untitled project"
 
 
 def test_delete_responses_return_the_resulting_model_etag(tmp_path, monkeypatch):
