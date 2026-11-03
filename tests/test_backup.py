@@ -58,7 +58,8 @@ def test_create_and_verify_backup(tmp_path, monkeypatch):
 
     assert snapshot.parent == backups
     assert snapshot.exists()
-    assert snapshot.stat().st_mode & 0o777 == 0o600
+    if os.name == "posix":
+        assert snapshot.stat().st_mode & 0o777 == 0o600
     assert backup.verify_backup(snapshot) == snapshot.resolve()
     with sqlite3.connect(database) as live, sqlite3.connect(snapshot) as saved:
         assert live.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
