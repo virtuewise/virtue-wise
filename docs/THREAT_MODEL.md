@@ -78,3 +78,12 @@ This threat model does not claim resistance to a compromised operating system, m
 - [ ] Validate each “present” control against current code and tests.
 - [ ] Track each required control to an implementation, test, or explicit risk acceptance in issue #7.
 - [ ] Revisit this model whenever authentication, integrations, network deployment, multi-user support, or sensitive data handling is introduced.
+
+
+## Future multi-user authorization policy (decision recorded)
+
+The selected product policy is **private by default, with explicit, revocable sharing**. This does not change the current supported deployment or security boundary described above: the application still has no authenticated identity, project ownership, sharing grants, or multi-user authorization.
+
+Before a multi-user implementation can be considered, the threat model must be expanded to cover cross-user and cross-tenant access, identity-provider compromise, session theft, invitation abuse, grant escalation, revocation races, export/download leakage, backup access, and administrative access. Authorization must be deny-by-default and enforced server-side for every project read and mutation, including import, export, and deletion. A project must be inaccessible to every identity other than its owner unless an explicit project-scoped grant exists. Revocation must take effect on the next authorization check, not merely hide UI controls.
+
+The first networked deployment topology (single host versus multi-host), tenant boundaries, role/permission vocabulary, identity provider, invitation lifecycle, audit retention, and encryption/key-management requirements remain unsettled. Do not infer those decisions from the private-by-default product policy, and do not implement network authentication or sharing until the deployment architecture is explicitly approved. See [the authentication and authorization design](AUTHENTICATION_DESIGN.md).
