@@ -35,6 +35,9 @@ def test_core_workflow_and_responsive_layout():
             "(items) => items.filter((item) => !(item.labels?.length || item.getAttribute('aria-label') || item.getAttribute('aria-labelledby'))).map((item) => item.id || item.outerHTML.slice(0, 120))"
         )
         assert not unnamed_fields, f"Controls without accessible labels: {unnamed_fields}"
+        assert page.locator("main").count() == 1
+        assert page.get_by_role("heading", level=1).count() == 1
+        expect(page.locator("#notice")).to_have_attribute("role", "status")
 
         # Project edits persist across a full page reload.
         page.get_by_label("Project name").fill("Browser acceptance project")
@@ -99,10 +102,32 @@ def test_core_workflow_and_responsive_layout():
         expect(page.locator(".scenario-card")).to_have_count(2)
         expect(page.locator("#scenario-comparison-note")).to_contain_text("descriptive, not scored")
 
-        # Native edit dialog exposes labels and saves changed content.
-        page.locator(".scenario-card").filter(has_text="Reduce agenda scope").get_by_role(
+        # Dynamically rendered controls retain accessible names after records are added.
+        unnamed_dynamic_buttons = page.locator("button").evaluate_all(
+            "(items) => items.filter((item) => !(item.innerText.trim() || item.getAttribute('aria-label') || item.getAttribute('title'))).length"
+        )
+        assert unnamed_dynamic_buttons == 0
+        unnamed_dynamic_fields = page.locator("input:not([type=hidden]), select, textarea").evaluate_all(
+            "(items) => items.filter((item) => !(item.labels?.length || item.getAttribute('aria-label') || item.getAttribute('aria-labelledby'))).map((item) => item.id || item.outerHTML.slice(0, 120))"
+        )
+        assert not unnamed_dynamic_fields, f"Dynamic controls without accessible labels: {unnamed_dynamic_fields}"
+
+        # Native edit dialog supports Escape, exposes its name, and restores focus.
+        edit_button = page.locator(".scenario-card").filter(has_text="Reduce agenda scope").get_by_role(
             "button", name="Edit"
-        ).click()
+        )
+        edit_button.click()
+        dialog = page.get_by_role("dialog")
+        expect(dialog).to_be_visible()
+        expect(dialog).to_have_attribute("aria-labelledby", "editor-dialog-title")
+        expect(dialog.get_by_role("heading", name="Edit scenario")).to_be_visible()
+        expect(dialog.get_by_label("Scenario name")).to_be_focused()
+        page.keyboard.press("Escape")
+        expect(dialog).not_to_be_visible()
+        expect(edit_button).to_be_focused()
+
+        # Reopen the dialog and verify keyboard-accessible editing and saving.
+        edit_button.click()
         dialog = page.get_by_role("dialog")
         expect(dialog).to_be_visible()
         dialog.get_by_label("Scenario name").fill("Reduce agenda scope carefully")
