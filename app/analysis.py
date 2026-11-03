@@ -381,12 +381,18 @@ def _opencode_headers() -> dict[str, str]:
     return {"Authorization": f"Basic {token}"}
 
 
-def _opencode_request(path: str, payload: dict | None = None, *, method: str | None = None) -> dict:
+def _opencode_request(
+    path: str,
+    payload: dict | None = None,
+    *,
+    method: str | None = None,
+    timeout: int = 4,
+) -> dict:
     return _request_provider_json(
         f"{_opencode_url()}{path}",
         payload,
         headers=_opencode_headers(),
-        timeout=4,
+        timeout=timeout,
         method=method,
     )
 
@@ -698,6 +704,7 @@ def _create_opencode_draft(model_id: str, user_text: str, project_model) -> Anal
                 "tools": {"*": False},
                 "parts": [{"type": "text", "text": _analysis_prompt(user_text, project_model)}],
             },
+            timeout=ANALYSIS_TIMEOUT_SECONDS,
         )
         parts = response.get("parts")
         content = (
