@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from fastapi import FastAPI, HTTPException, Request, Response, UploadFile
+from fastapi import FastAPI, Header, HTTPException, Request, Response, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -261,6 +261,26 @@ def save_validated_model(model: ProjectModel) -> ProjectModel:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 
+def save_validated_model_if_current(model: ProjectModel, if_match: str | None) -> ProjectModel:
+    """Validate and atomically replace only the revision the caller observed."""
+    if if_match is None:
+        raise HTTPException(status_code=428, detail="If-Match is required. Reload the project first.")
+    revision = if_match.strip()
+    if revision.startswith('"') and revision.endswith('"'):
+        revision = revision[1:-1]
+    if not revision or "," in revision or revision == "*":
+        raise HTTPException(status_code=400, detail="A single strong If-Match revision is required.")
+    try:
+        validated = ProjectModel.model_validate(model.model_dump(mode="python"))
+        return store.save_model_if_current(validated, revision)
+    except ValidationError as exc:
+        raise HTTPException(status_code=422, detail="Model failed integrity validation.") from exc
+    except store.StoreConflictError as exc:
+        raise HTTPException(status_code=412, detail=str(exc)) from exc
+    except store.StoreBusyError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
 def mutate_validated_model(mutator) -> ProjectModel:
     """Apply a model change inside a database-backed write transaction."""
     try:
@@ -285,17 +305,23 @@ def health() -> dict[str, str]:
 
 
 @app.get("/api/model", response_model=ProjectModel)
-def get_model() -> ProjectModel:
-    return store.load_model()
+def get_model(response: Response) -> ProjectModel:
+    model, revision = store.load_model_with_revision()
+    response.headers["ETag"] = f'"{revision}"'
+    return model
 
 
 @app.put("/api/model", response_model=ProjectModel)
-def replace_model(model: ProjectModel) -> ProjectModel:
-    return save_validated_model(model)
+def replace_model(
+    model: ProjectModel, if_match: str | None = Header(default=None, alias="If-Match")
+) -> ProjectModel:
+    return save_validated_model_if_current(model, if_match)
 
 
 @app.put("/api/import", response_model=ProjectModel)
-async def import_model(upload: UploadFile) -> ProjectModel:
+async def import_model(
+    upload: UploadFile, if_match: str | None = Header(default=None, alias="If-Match")
+) -> ProjectModel:
     """Validate a versioned JSON upload before replacing the current local model."""
     if upload.content_type not in {"application/json", "text/json", "application/octet-stream"}:
         raise HTTPException(status_code=415, detail="Upload a JSON file.")
@@ -321,7 +347,7 @@ async def import_model(upload: UploadFile) -> ProjectModel:
             status_code=422,
             detail="JSON does not match the supported VIRTUE WISE model schema.",
         ) from exc
-    return save_validated_model(model)
+    return save_validated_model_if_current(model, if_match)
 
 
 @app.post("/api/statements", response_model=ProjectModel, status_code=201)
