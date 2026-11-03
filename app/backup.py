@@ -144,7 +144,7 @@ def restore_backup(path: str | Path) -> tuple[Path, Path | None]:
     if source_path == target_path.resolve():
         raise ValueError("The live database cannot be used as its own restore source.")
 
-    target_path.parent.mkdir(parents=True, exist_ok=True)
+    target_path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     pre_restore = create_backup(protect=(source_path,)) if target_path.is_file() else None
     temporary = target_path.with_name(f".{target_path.name}.{uuid4().hex}.restore")
     try:
