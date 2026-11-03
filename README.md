@@ -18,7 +18,8 @@ VIRTUE WISE is an open-source effort to investigate that foundation. It is not t
 
 The current local-first prototype includes:
 
-- **Project workspace:** edit a project title and goal.
+- **Conversational-first intake:** describe an idea, challenge, opportunity, or decision in one free-form prompt; preview a suggested project title, preserve the original description, and save extracted user-provided statements in one reviewable action.
+- **Guided reflection:** surface general questions about assumptions, evidence, missing information, and what could change a user's view. These are deterministic prompts, not AI findings.
 - **Statements and provenance:** create, edit, and delete user-provided statements with source labels and optional excerpts.
 - **Hypothesis review:** create and edit hypotheses, link them to statements, set qualitative uncertainty, and accept, revise, or reject with a review note.
 - **Scenario comparison:** create, edit, and delete alternatives with explicit assumptions and expected outcomes; compare them side by side without artificial scores.
@@ -26,7 +27,7 @@ The current local-first prototype includes:
 - **Quality checks:** automated API tests and CI for Python 3.12/3.13 on Linux and Windows, Ruff, and Markdown linting.
 - **Operational readiness:** separate liveness (`/health`) and storage readiness (`/ready`) checks; readiness validates SQLite integrity and the saved model without returning project content.
 
-These are prototype capabilities, not claims of validated prediction or professional advice.
+The conversational intake is an initial UX improvement, not an AI analysis engine. It does not perform web research, independently extract verified facts, generate topic-specific hypotheses, discover unknown unknowns, or predict outcomes. These are prototype capabilities, not claims of validated prediction or professional advice.
 
 ## Run locally
 
@@ -63,6 +64,7 @@ pytest
 - No authentication, authorization, sessions, encryption at rest, or session-bound CSRF tokens. Basic request-origin and Host checks are defense in depth, not production hardening.
 - A verified SQLite backup CLI, backup freshness/integrity health check (`python -m app.backup check`), and sample daily systemd timer are provided, but scheduling and monitoring/alerting must be configured by the operator; backups are not encrypted by the app.
 - JSON import supports the current schema version only; migrations are not implemented.
+- The current conversational intake only organizes text supplied by the user and displays general reflection prompts; no language model, research engine, or autonomous discovery capability is integrated.
 - Scenario comparison is qualitative, not a prediction engine.
 - Editing uses native HTML dialog forms with labels, validation, save/cancel controls, and visible error feedback.
 - Manual accessibility and end-to-end acceptance reviews remain to be completed.
