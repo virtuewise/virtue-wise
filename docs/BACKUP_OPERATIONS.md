@@ -6,6 +6,7 @@ VIRTUE WISE includes a local SQLite snapshot tool and a sample systemd timer. Th
 
 - Uses SQLite's online backup API to create a consistent database snapshot, including while the app is running.
 - Verifies SQLite integrity and validates the stored VIRTUE WISE model before publishing the snapshot.
+- Flushes the completed staging database before atomic publication and, on POSIX, flushes the containing directory after the rename so the published directory entry is committed as far as the host filesystem supports.
 - Creates new backup directories with POSIX mode `0700` and pre-creates backup/restore staging files with mode `0600` before SQLite writes to them; published snapshots are also restricted to owner read/write permissions where supported.
 - Does not change permissions on an existing custom backup directory. Ensure custom directories are private; Windows relies on inherited filesystem ACLs.
 - Retains the newest 30 snapshots by default.
@@ -95,7 +96,7 @@ python -m app.backup restore /path/to/verified-snapshot.sqlite3 --yes
 4. Restart the application and verify the project title, goal, record counts, evidence links, review states, and scenarios.
 5. Create a fresh backup after successful recovery.
 
-Restore is staged and verified before replacing the live database. If a live database exists, the tool creates a pre-restore snapshot first. Keep the original backup unchanged until recovery has been checked.
+Restore is staged and verified before replacing the live database. The staging database is flushed before replacement and the containing directory is flushed on POSIX after the atomic rename. If a live database exists, the tool creates a pre-restore snapshot first. Keep the original backup unchanged until recovery has been checked. Directory-entry durability depends on the host filesystem and storage device honoring flush requests; this is not a substitute for a restore drill or a separate protected backup copy.
 
 ## Recovery objectives and limitations
 
