@@ -258,7 +258,9 @@ def test_provider_self_test_uses_only_fictional_context(monkeypatch):
     ],
 )
 def test_provider_self_test_reports_provider_failures(
-    monkeypatch, provider_error, status_code
+    monkeypatch,
+    provider_error,
+    status_code,
 ):
     def fail_analysis(*_args):
         raise provider_error
