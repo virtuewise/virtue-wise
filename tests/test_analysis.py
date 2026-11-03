@@ -276,7 +276,8 @@ def test_provider_self_test_rejects_empty_structured_response(monkeypatch):
     )
 
     assert response.status_code == 502
-    assert response.json()["detail"] == "The provider returned an empty structured response."
+    detail = response.json()["detail"]
+    assert detail == "The provider returned an empty structured response."
 
 
 @pytest.mark.parametrize(
