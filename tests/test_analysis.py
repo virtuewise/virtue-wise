@@ -55,7 +55,10 @@ def test_analysis_uses_structured_local_output_and_filters_unknown_evidence(monk
         "hypotheses": [
             {
                 "claim": "Agenda scope may contribute to overruns.",
-                "rationale": "The notes are consistent with this possibility, but do not establish causation.",
+                "rationale": (
+                    "The notes are consistent with this possibility, but do not "
+                    "establish causation."
+                ),
                 "evidence_statement_ids": [statement.id, "not-a-real-statement"],
                 "counterpoints": ["Meeting overruns may have unrelated causes."],
             }
