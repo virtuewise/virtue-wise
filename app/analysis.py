@@ -660,6 +660,7 @@ def _chat_completion(base_url: str, api_key: str, model_id: str, user_text: str,
             "model": model_id,
             "stream": False,
             "temperature": 0.2,
+            "max_tokens": 4096,
             "response_format": {"type": "json_object"},
             "messages": [
                 {"role": "system", "content": SYSTEM_PROMPT},
