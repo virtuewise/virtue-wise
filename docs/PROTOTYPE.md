@@ -6,7 +6,10 @@ Validate a low-risk project-planning workflow in which a person can enter inform
 
 ## Implemented in this prototype
 
-1. Create and edit a project goal.
+1. Start with one conversational-style free-form description and preview a draft project title, preserved goal text, and extracted user-provided statements.
+2. Save the reviewed intake draft in one model update while preserving existing records and evidence links.
+3. Receive generic reflection prompts about assumptions, evidence, missing information, and falsification; these prompts are not topic-specific analysis or AI findings.
+4. Create and edit a project goal.
 2. Add, edit, and delete user-provided statements with source labels and optional excerpts.
 3. Create and edit hypotheses with explicit uncertainty and links to evidence statements.
 4. Accept, revise, or reject a hypothesis while retaining the original statements and review note.
@@ -40,7 +43,7 @@ A hypothesis must never silently become a verified fact after acceptance. The re
 
 ## Inference policy
 
-The prototype uses user-created hypotheses and does not require an external language model. Qualitative labels—unknown, tentative, and supported—are not calibrated probabilities. Scenario comparison is descriptive and does not claim causal discovery or reliable prediction.
+The conversational intake currently performs deterministic text organization only. It does not use a language model, browse sources, verify claims, independently generate hypotheses, or discover unknown unknowns. Reflection questions are generic prompts and must not be represented as insights. The prototype uses user-created hypotheses and does not require an external language model. Qualitative labels—unknown, tentative, and supported—are not calibrated probabilities. Scenario comparison is descriptive and does not claim causal discovery or reliable prediction.
 
 ## Privacy and safety boundaries
 
@@ -55,6 +58,7 @@ The prototype uses user-created hypotheses and does not require an external lang
 ## Acceptance criteria
 
 - [x] Create and edit the project through the interface.
+- [ ] Complete browser acceptance for the conversational intake: preview, discard, save, preserve existing model data, and reload persistence.
 - [x] Keep statements separate from hypotheses.
 - [x] Trace hypotheses to evidence or mark them as lacking evidence.
 - [x] Accept, revise, or reject a hypothesis without rewriting source statements.
