@@ -193,8 +193,7 @@ def test_scenario_create_update_delete_and_compare(tmp_path, monkeypatch):
 def test_json_import_validates_before_replacing_model(tmp_path, monkeypatch):
     client = test_client(tmp_path, monkeypatch)
     put_with_revision(
-        client,
-        "/api/model", json={"title": "Keep this model"})
+        client, "/api/model",
     invalid = put_with_revision(
         client, "/api/import",
         files={"upload": ("invalid.json", b'{"schema_version": 99}', "application/json")},
@@ -263,8 +262,7 @@ def test_import_rejects_dangling_evidence_and_oversized_upload(tmp_path, monkeyp
 def test_export_and_delete(tmp_path, monkeypatch):
     client = test_client(tmp_path, monkeypatch)
     put_with_revision(
-        client,
-        "/api/model", json={"title": "Sample plan", "goal": "Learn from a small trial"})
+        client, "/api/model",
     exported = client.get("/api/export")
     assert exported.status_code == 200
     assert exported.headers["content-disposition"].endswith('filename="virtue-wise-model.json"')
@@ -439,8 +437,7 @@ def test_import_rejects_invalid_utf8_and_malformed_json_without_replacing_model(
 ):
     client = test_client(tmp_path, monkeypatch)
     put_with_revision(
-        client,
-        "/api/model", json={"title": "Keep this model"})
+        client, "/api/model",
     invalid_payloads = [
         b"\\xff\\xfe",
         b'{"title": "SENSITIVE-CANARY",',
@@ -459,8 +456,7 @@ def test_import_rejects_invalid_utf8_and_malformed_json_without_replacing_model(
 def test_import_rejects_duplicate_keys_and_nonstandard_json_numbers(tmp_path, monkeypatch):
     client = test_client(tmp_path, monkeypatch)
     put_with_revision(
-        client,
-        "/api/model", json={"title": "Keep this model"})
+        client, "/api/model",
     invalid_payloads = [
         b'{"schema_version": 1, "title": "first", "title": "second"}',
         b'{"schema_version": 1, "goal": NaN}',
@@ -565,8 +561,7 @@ def test_concurrent_statement_creates_do_not_lose_updates(tmp_path, monkeypatch)
 def test_chunked_import_request_without_content_length_is_bounded(tmp_path, monkeypatch):
     client = test_client(tmp_path, monkeypatch)
     put_with_revision(
-        client,
-        "/api/model", json={"title": "Preserve this model"})
+        client, "/api/model",
     boundary = "virtue-wise-boundary"
     body = (
         (
@@ -633,8 +628,7 @@ def test_database_mutation_rolls_back_when_callback_fails(tmp_path, monkeypatch)
 def test_import_body_timeout_returns_408_without_replacing_model(tmp_path, monkeypatch):
     client = test_client(tmp_path, monkeypatch)
     put_with_revision(
-        client,
-        "/api/model", json={"title": "Preserve this model"})
+        client, "/api/model",
     monkeypatch.setattr("app.main.IMPORT_BODY_TIMEOUT_SECONDS", 0.01)
     original_receive = Request.receive
 
