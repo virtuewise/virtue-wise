@@ -209,6 +209,15 @@ def test_core_workflow_and_responsive_layout():
         page.get_by_role("button", name="Find available AI models").click()
         expect(page.locator("#local-ai-status")).to_contain_text("provider rate limit was reached")
         page.unroute_all()
+        page.route("**/api/analysis/status", lambda route: route.fulfill(
+            status=503,
+            content_type="application/json",
+            body='{"detail":"The project database is busy. Retry the request."}'
+        ))
+        page.get_by_role("button", name="Find available AI models").click()
+        expect(page.locator("#local-ai-status")).to_contain_text("project database is busy")
+        expect(page.locator("#local-ai-status")).not_to_contain_text("AI provider")
+        page.unroute_all()
 
         # Destructive action requires confirmation and returns an empty workspace.
         page.get_by_role("button", name="Delete local model").click()
