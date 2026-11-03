@@ -4,6 +4,7 @@ import os
 import sqlite3
 import stat
 import sys
+from pathlib import Path
 
 import pytest
 
@@ -21,7 +22,7 @@ def configure_paths(tmp_path, monkeypatch):
 
 def test_systemd_backup_service_uses_a_restricted_sandbox():
     unit_path = (
-        __import__("pathlib").Path(__file__).resolve().parents[1]
+        Path(__file__).resolve().parents[1]
         / "deploy"
         / "systemd"
         / "virtue-wise-backup.service"
