@@ -35,6 +35,8 @@ python -m app.backup prune --keep 30
 
 The `create` command creates a snapshot, verifies it, and prunes older snapshots. It fails rather than creating an empty backup when the live database does not exist yet.
 
+After deleting project data, remove all managed local snapshots with `python -m app.backup purge --yes`. This is irreversible and deletes only `virtue-wise-*.sqlite3` files in the configured backup directory; it does not delete JSON exports, off-device copies, or backups on other hosts. Use it only after confirming no restore point is still needed.
+
 ## Schedule daily backups with systemd
 
 The sample files are in `deploy/systemd/`. They assume:
