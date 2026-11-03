@@ -611,7 +611,6 @@ def test_database_mutation_rolls_back_when_callback_fails(tmp_path, monkeypatch)
     assert restored.title == original.title
 
 
-
 def test_import_body_timeout_returns_408_without_replacing_model(tmp_path, monkeypatch):
     client = test_client(tmp_path, monkeypatch)
     client.put("/api/model", json={"title": "Preserve this model"})
