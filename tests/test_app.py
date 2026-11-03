@@ -19,6 +19,13 @@ def test_client(tmp_path, monkeypatch):
     return TestClient(app)
 
 
+def put_with_revision(client, path, *args, **kwargs):
+    """Send a replacement/import using the current server revision."""
+    headers = dict(kwargs.pop("headers", {}))
+    headers["If-Match"] = client.get("/api/model").headers["etag"]
+    return client.put(path, *args, headers=headers, **kwargs)
+
+
 def test_health_and_empty_model(tmp_path, monkeypatch):
     client = test_client(tmp_path, monkeypatch)
     assert client.get("/health").json()["status"] == "ok"
@@ -185,9 +192,8 @@ def test_scenario_create_update_delete_and_compare(tmp_path, monkeypatch):
 
 def test_json_import_validates_before_replacing_model(tmp_path, monkeypatch):
     client = test_client(tmp_path, monkeypatch)
-    client.put("/api/model", json={"title": "Keep this model"})
-    invalid = client.put(
-        "/api/import",
+    put_with_revision(client, "/api/model", json={"title": "Keep this model"})
+    invalid = put_with_revision(client, "/api/import",
         files={"upload": ("invalid.json", b'{"schema_version": 99}', "application/json")},
     )
     assert invalid.status_code == 422
@@ -219,8 +225,7 @@ def test_documented_demo_model_imports_and_preserves_links(tmp_path, monkeypatch
     client = test_client(tmp_path, monkeypatch)
     example_path = Path(__file__).resolve().parents[1] / "examples" / "demo-project.json"
     with example_path.open("rb") as example:
-        imported = client.put(
-            "/api/import",
+        imported = put_with_revision(client, "/api/import",
             files={"upload": ("demo-project.json", example, "application/json")},
         )
     assert imported.status_code == 200
@@ -375,8 +380,7 @@ def test_security_headers_are_present_on_application_responses(tmp_path, monkeyp
 
 def test_state_changing_request_rejects_cross_origin_origin_header(tmp_path, monkeypatch):
     client = test_client(tmp_path, monkeypatch)
-    response = client.put(
-        "/api/model",
+    response = put_with_revision(client, "/api/model",
         json={"title": "Should not be saved"},
         headers={"Origin": "https://attacker.example"},
     )
