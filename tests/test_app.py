@@ -721,9 +721,7 @@ def test_import_rejects_stale_revision_without_replacing_model(tmp_path, monkeyp
 def test_delete_responses_return_the_resulting_model_etag(tmp_path, monkeypatch):
     client = test_client(tmp_path, monkeypatch)
 
-    statement = client.post("/api/statements", json={"text": "Delete me"}).json()[
-        "statements"
-    ][0]
+    statement = client.post("/api/statements", json={"text": "Delete me"}).json()["statements"][0]
     deleted_statement = client.delete(f"/api/statements/{statement['id']}")
     assert deleted_statement.status_code == 204
     assert deleted_statement.headers["etag"] == client.get("/api/model").headers["etag"]
