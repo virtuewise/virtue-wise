@@ -15,6 +15,10 @@ class StoreBusyError(RuntimeError):
     """Raised when another process holds SQLite's write lock too long."""
 
 
+class StoreConflictError(RuntimeError):
+    """Raised when a full-model replacement is based on a stale revision."""
+
+
 def _raise_if_database_busy(error: sqlite3.OperationalError) -> None:
     message = str(error).lower()
     if "locked" in message or "busy" in message:
@@ -48,6 +52,23 @@ def load_model() -> ProjectModel:
     if row is None:
         return ProjectModel()
     return ProjectModel.model_validate_json(row[0])
+
+
+def load_model_with_revision() -> tuple[ProjectModel, str]:
+    """Load the model and its compare-and-swap revision.
+
+    The sentinel revision is stable before the first save, unlike a newly
+    generated empty model timestamp.
+    """
+    connection = _connect()
+    try:
+        row = connection.execute("SELECT payload FROM project_model WHERE singleton = 1").fetchone()
+    finally:
+        connection.close()
+    if row is None:
+        return ProjectModel(), "empty"
+    model = ProjectModel.model_validate_json(row[0])
+    return model, model.updated_at.isoformat()
 
 
 def _write_model(connection: sqlite3.Connection, model: ProjectModel) -> None:
@@ -84,6 +105,26 @@ def save_model(model: ProjectModel) -> ProjectModel:
     connection = _connect()
 
     def write():
+        _write_model(connection, validated)
+        return validated
+
+    return _run_write_transaction(connection, write)
+
+
+def save_model_if_current(model: ProjectModel, expected_revision: str) -> ProjectModel:
+    """Replace the model only if its current revision still matches the caller."""
+    validated = ProjectModel.model_validate(model.model_dump(mode="python"))
+    connection = _connect()
+
+    def write():
+        row = connection.execute("SELECT payload FROM project_model WHERE singleton = 1").fetchone()
+        current_revision = (
+            "empty"
+            if row is None
+            else ProjectModel.model_validate_json(row[0]).updated_at.isoformat()
+        )
+        if current_revision != expected_revision:
+            raise StoreConflictError("The project changed since it was loaded. Reload before replacing it.")
         _write_model(connection, validated)
         return validated
 
