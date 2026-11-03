@@ -25,6 +25,20 @@ This is a manual review checklist for the first local prototype. Use fictional d
 - [ ] Attempt to import malformed JSON or a model with dangling evidence; confirm the current model is not replaced.
 - [ ] Delete the local model and confirm an empty model is ready.
 
+## Optional local AI analysis
+
+This section requires Ollama and at least one locally installed model. It is optional; the rest of the application must remain usable when Ollama is absent.
+
+- [ ] With Ollama stopped, select Check local AI; confirm the app reports that local AI is unavailable without breaking the workspace.
+- [ ] Start Ollama on loopback and install a model; confirm the app lists installed model names.
+- [ ] Confirm no analysis starts until the consent checkbox is selected and Analyze with local AI is clicked.
+- [ ] Run an analysis with fictional project data; confirm the output is clearly labelled as unverified model suggestions.
+- [ ] Confirm evidence links refer only to existing statement IDs and unknown IDs are removed with a warning.
+- [ ] Add one hypothesis and confirm it remains proposed with unknown uncertainty and a local-model provenance note.
+- [ ] Save one scenario and confirm its assumptions and generated-draft status remain visible.
+- [ ] Reload the browser and confirm generated analysis drafts were not silently persisted; only explicitly saved hypotheses/scenarios remain.
+- [ ] Inspect local network activity and confirm the app contacts only the loopback Ollama service, not a hosted AI provider.
+
 ## Accessibility and browser checks
 
 - [ ] Complete the workflow using only the keyboard.
