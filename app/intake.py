@@ -41,7 +41,7 @@ class SourceExtractionError(SourceError):
 def _safe_filename(filename: str | None) -> str:
     raw = (filename or "").replace("\\", "/")
     name = PurePosixPath(raw).name
-    name = "".join(char for char in name if char.isprintable() and char not in "<>:\\"|?*")
+    name = "".join(char for char in name if char.isprintable() and char not in '< >:"|?*')
     name = name.strip().strip(".")
     if not name:
         raise SourceExtractionError("The uploaded file must have a valid filename.")
