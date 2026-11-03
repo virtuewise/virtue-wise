@@ -2,6 +2,8 @@
 
 **Status:** operating procedure for the local prototype, not a production-readiness claim. The security gate in [issue #7](https://github.com/virtuewise/virtue-wise/issues/7) must be satisfied before any network deployment.
 
+For local data deletion, schema-change handling, patching, and incident response, follow the [local operations runbook](OPERATIONS_RUNBOOK.md). These procedures do not satisfy the separate network-deployment security gate.
+
 ## Compatibility contract
 
 - The exported JSON model contains `schema_version`; the current supported version is **1**.
