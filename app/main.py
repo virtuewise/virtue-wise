@@ -448,7 +448,9 @@ def add_hypothesis(hypothesis: Hypothesis, response: Response) -> ProjectModel:
 
 
 @app.put("/api/hypotheses/{hypothesis_id}", response_model=ProjectModel)
-def update_hypothesis(hypothesis_id: str, update: HypothesisUpdate, response: Response) -> ProjectModel:
+def update_hypothesis(
+    hypothesis_id: str, update: HypothesisUpdate, response: Response
+) -> ProjectModel:
     def mutate(model: ProjectModel) -> None:
         hypothesis = next((item for item in model.hypotheses if item.id == hypothesis_id), None)
         if hypothesis is None:
@@ -483,7 +485,9 @@ def update_hypothesis(hypothesis_id: str, update: HypothesisUpdate, response: Re
 
 
 @app.patch("/api/hypotheses/{hypothesis_id}/review", response_model=ProjectModel)
-def review_hypothesis(hypothesis_id: str, request: ReviewRequest, response: Response) -> ProjectModel:
+def review_hypothesis(
+    hypothesis_id: str, request: ReviewRequest, response: Response
+) -> ProjectModel:
     allowed = {"accepted", "revised", "rejected"}
     if request.status not in allowed:
         raise HTTPException(
