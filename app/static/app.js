@@ -1,5 +1,6 @@
 const byId = (id) => document.getElementById(id);
 let model = null;
+let modelRevision = null;
 
 function announce(message, isError = false) {
   const notice = byId("notice");
@@ -8,10 +9,12 @@ function announce(message, isError = false) {
 }
 
 async function request(url, options = {}) {
-  const response = await fetch(url, {
-    ...options,
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
-  });
+  const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
+  if (url === "/api/model" && options.method === "PUT" || url === "/api/import") {
+    if (!modelRevision) throw new Error("Reload the project before replacing or importing it.");
+    headers["If-Match"] = `"${modelRevision}"`;
+  }
+  const response = await fetch(url, { ...options, headers });
   if (!response.ok) {
     let detail = `Request failed (${response.status})`;
     try {
@@ -20,7 +23,14 @@ async function request(url, options = {}) {
     } catch { /* Keep the status-based message. */ }
     throw new Error(detail);
   }
-  return response.status === 204 ? null : response.json();
+  if (response.status === 204) return null;
+  const body = await response.json();
+  if (url === "/api/model" && (!options.method || options.method === "GET")) {
+    modelRevision = response.headers.get("ETag")?.replace(/^"|"$/g, "") || null;
+  } else if (body?.updated_at) {
+    modelRevision = body.updated_at;
+  }
+  return body;
 }
 
 let actionInProgress = false;
@@ -417,12 +427,18 @@ byId("import-file").addEventListener("change", async (event) => {
   await runAction(async () => {
     const form = new FormData();
     form.append("upload", file);
-    const response = await fetch("/api/import", { method: "PUT", body: form });
+    if (!modelRevision) throw new Error("Reload the project before importing.");
+    const response = await fetch("/api/import", {
+      method: "PUT",
+      body: form,
+      headers: { "If-Match": `"${modelRevision}"` },
+    });
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));
       throw new Error(body.detail || `Import failed (${response.status})`);
     }
     model = await response.json();
+    modelRevision = model.updated_at;
     render();
   }, "JSON model imported and validated.");
   event.target.value = "";
