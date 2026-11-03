@@ -668,7 +668,6 @@ def test_import_capacity_limit_returns_503(tmp_path, monkeypatch):
     assert response.headers["retry-after"] == "1"
 
 
-
 def test_full_model_replacement_requires_current_revision(tmp_path, monkeypatch):
     client = test_client(tmp_path, monkeypatch)
     initial = client.get("/api/model")
