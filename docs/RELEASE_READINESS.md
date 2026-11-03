@@ -11,26 +11,22 @@
 - Until a migration is implemented and tested, treat a new incompatible schema as a deliberate breaking change. Keep an untouched export from the prior version before upgrading.
 - Do not promise API stability: the API and data format remain prototype interfaces.
 
-## Backup procedure (current manual capability)
+## Backup procedure
 
-1. Use the application's **Export JSON** action to download `virtue-wise-model.json`.
-2. Store the export in a user-controlled location separate from the working application/database directory. Protect it with the operating system's file permissions; exports contain the complete project content.
-3. Use a dated filename and retain more than one generation when the data matters, for example `virtue-wise-model-YYYY-MM-DD.json`.
-4. Before a risky edit, application update, or import, export the current model first.
-5. Do not treat a successful download as a verified backup until the file exists, has a plausible non-zero size, and can be imported into a disposable test instance.
+Use `python -m app.backup create` to make a consistent SQLite snapshot, verify its integrity and model payload, and prune older snapshots. The default retention is 30 snapshots. Set `VIRTUE_WISE_BACKUP_DIR` to a directory on a separate volume and `VIRTUE_WISE_BACKUP_RETENTION_COUNT` to change the policy. See [backup operations](BACKUP_OPERATIONS.md) for configuration and the sample daily systemd timer.
 
-There is currently no automatic backup scheduler, retention policy, encrypted backup manager, or restore-point UI. These are limitations, not implied features.
+The application does not start its own scheduler. Automated daily backups only occur after the operator installs and enables the supplied systemd timer (or configures an equivalent OS scheduler). Verify timer execution and run `python -m app.backup verify PATH` before relying on a snapshot. The tool restricts backup file permissions but does not encrypt backups; use OS-level disk encryption and a separate protected copy. Keep JSON export as a portable secondary recovery option.
 
 ## Recovery and restore procedure
 
-1. Preserve a copy of the current export and do not overwrite the only known-good backup.
-2. Start a clean instance with a separate `VIRTUE_WISE_DB` path for recovery testing.
-3. Import the backup JSON. The current app supports schema version 1 only; unsupported or malformed files should be rejected without replacing the current model.
-4. Verify the project title/goal, record counts, statement text and source fields, hypothesis evidence links, review states, and scenarios against the expected project.
-5. If verification succeeds, preserve the original export and import the verified file into the intended instance. Export again after restoration.
+1. Stop the application before replacing its SQLite database file.
+2. Verify the selected snapshot with `python -m app.backup verify PATH`.
+3. Restore it with `python -m app.backup restore PATH --yes`. If a live database exists, the tool first creates a pre-restore snapshot.
+4. Restart the application and verify the project title/goal, record counts, statement text and source fields, hypothesis evidence links, review states, and scenarios.
+5. Preserve the original snapshot and create a fresh backup after successful recovery.
 6. If recovery fails, keep the original backup unchanged and investigate using a copy; do not experiment on the only backup.
 
-The automated suite also exercises an export → delete → import restore cycle and verifies that project identity, statement IDs, evidence links, review status, and scenario content survive. This is a regression check, not a substitute for testing a downloaded backup in a disposable clean instance.
+The automated suite exercises both JSON export → delete → import recovery and SQLite snapshot → verify → restore recovery. These are regression checks, not substitutes for periodically restoring a scheduled backup on a disposable instance.
 
 For database-level recovery, stop the application and preserve a copy of the database and any SQLite sidecar files before investigation. JSON export/import is the intended portable recovery route for the current prototype. No recovery-time or recovery-point objective is promised.
 
@@ -43,7 +39,7 @@ For database-level recovery, stop the application and preserve a copy of the dat
 - [ ] Validate import/export against `examples/demo-project.json` and a real version 1 export fixture.
 - [ ] Review dependencies, workflow permissions, secrets exposure, and known vulnerabilities.
 - [ ] Complete and record the manual workflow and accessibility checklist in [ACCEPTANCE.md](ACCEPTANCE.md) when a browser-testing session is available.
-- [ ] Confirm backup and restore on a disposable database and record the result.
+- [ ] Install the daily backup scheduler, verify a successful recent snapshot, and complete a restore drill on a disposable database.
 - [ ] Verify that documentation accurately states the deployment boundary and open security risks.
 - [ ] For any network deployment, obtain explicit approval of security issue #7; ordinary CI passing is not sufficient.
 - [ ] Tag the exact reviewed commit, publish concise release notes including schema/API compatibility, known limitations, backup instructions, and rollback steps.
@@ -61,4 +57,4 @@ For the local prototype, rollback means stopping the app, preserving the current
 
 ## Release decision
 
-The project is **not ready for network deployment** while issue #7 is open. The manual usability/accessibility checks are also outstanding. This policy defines steps to follow; it does not claim that backups, migrations, automated recovery, security controls, or manual browser checks have already been implemented.
+The project is **not ready for network deployment** while issue #7 is open. The manual usability/accessibility checks are also outstanding. Backup/verify/restore tooling and a sample scheduler are implemented, but the operator must install the scheduler, protect backups with host-level encryption, and complete a restore drill. Migrations, network security controls, and manual browser checks remain incomplete.
