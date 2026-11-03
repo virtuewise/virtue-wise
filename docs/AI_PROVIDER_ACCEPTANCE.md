@@ -30,6 +30,7 @@ Then use a dedicated fictional project to verify the full analysis workflow, inc
 
 - [ ] No model discovery or analysis starts automatically on page load.
 - [ ] The fictional smoke test requires its own explicit consent.
+- [ ] Changing the selected provider or model resets both smoke-test and full-analysis consent.
 - [ ] The smoke-test request contains only provider, model, and consent fields; no prompt, saved project, or intake text is sent from the browser.
 - [ ] The smoke-test API uses a fixed fictional prompt and an empty project model; it never loads the saved workspace.
 - [ ] Full analysis does not start until the user selects a provider/model, checks its consent, and clicks Analyze.
