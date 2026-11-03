@@ -588,7 +588,7 @@ function renderAnalysisDraft(draft, providerId, modelName) {
       !draft.questions?.length && !draft.experiments?.length && !draft.scenarios?.length) {
     const empty = document.createElement("p");
     empty.className = "analysis-empty";
-    empty.textContent = "The model did not return actionable suggestions. Try adding more context or using another local model.";
+    empty.textContent = "The model did not return actionable suggestions. Try adding more context or choosing another AI model.";
     results.append(empty);
   }
   results.hidden = false;
