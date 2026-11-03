@@ -143,7 +143,7 @@ def _request_json(path: str, payload: dict | None = None, *, timeout: int) -> di
         raise AnalysisInvalidResponse("The local model response exceeded the size limit.")
     try:
         value = json.loads(raw.decode("utf-8"))
-    except (UnicodeDecodeError, ValueError) as exc:
+    except (UnicodeDecodeError, ValueError, RecursionError) as exc:
         raise AnalysisInvalidResponse("The local model returned invalid JSON.") from exc
     if not isinstance(value, dict):
         raise AnalysisInvalidResponse("The local model returned an unexpected response.")
