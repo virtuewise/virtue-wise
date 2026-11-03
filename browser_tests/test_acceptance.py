@@ -39,24 +39,41 @@ def test_core_workflow_and_responsive_layout():
         assert page.get_by_role("heading", level=1).count() == 1
         expect(page.locator("#notice")).to_have_attribute("role", "status")
 
-        # Project edits persist across a full page reload.
+        # Conversational intake creates a reviewable draft, saves once, and persists.
+        intake_text = "Explore planning delays\\n\\nThe team observed two meetings running over time."
+        page.locator("#intake-text").fill(intake_text)
+        page.get_by_role("button", name="Build my starting workspace").click()
+        expect(page.locator("#intake-preview")).to_be_visible()
+        expect(page.locator("#intake-preview")).to_contain_text("Input statements to preserve (2)")
+        expect(page.locator("#intake-preview")).to_contain_text("What evidence or source would help verify")
+        page.get_by_role("button", name="Save this starting workspace").click()
+        expect(page.locator("#notice")).to_contain_text("starting workspace has been saved")
+        expect(page.locator("#statement-list")).to_contain_text("The team observed two meetings running over time.")
+        page.reload(wait_until="networkidle")
+        expect(page.locator("#statement-list")).to_contain_text("The team observed two meetings running over time.")
+
+        # Project details remain editable but are secondary to conversational intake.
+        page.locator("details").filter(has_text="Edit project details manually").locator("summary").click()
+        expect(page.get_by_label("Project name")).to_have_value("Explore planning delays")
         page.get_by_label("Project name").fill("Browser acceptance project")
         page.get_by_label("Goal or question").fill("Verify the complete local workflow.")
-        page.get_by_role("button", name="Save project").click()
+        page.get_by_role("button", name="Save project details").click()
         expect(page.locator("#notice")).to_contain_text("Saved locally.")
         page.reload(wait_until="networkidle")
+        page.locator("details").filter(has_text="Edit project details manually").locator("summary").click()
         expect(page.get_by_label("Project name")).to_have_value("Browser acceptance project")
 
         # Statements remain separately visible and can be linked to a hypothesis.
+        page.locator("details").filter(has_text="Add a statement manually").locator("summary").click()
         page.locator("#statement-text").fill("Two planning meetings overran.")
         page.get_by_label("Source label").fill("Fictional planning notes")
         page.get_by_label("Optional source excerpt").fill("Two meetings exceeded the planned duration.")
         page.get_by_role("button", name="Add statement").click()
         expect(page.locator("#statement-list")).to_contain_text("Two planning meetings overran.")
-        statement_id = page.locator("#hypothesis-evidence option").first.get_attribute("value")
+        statement_id = page.locator("#hypothesis-evidence option").last.get_attribute("value")
         assert statement_id
 
-        page.get_by_label("Possible relationship or explanation").fill(
+        page.locator("details").filter(has_text="Add a hypothesis manually").locator("summary").click()\n        page.get_by_label("Possible relationship or explanation").fill(
             "Agenda scope may contribute to overruns."
         )
         page.get_by_label("Why might this be true?").fill(
@@ -83,7 +100,7 @@ def test_core_workflow_and_responsive_layout():
         )
 
         # Scenarios are displayed descriptively, without scores.
-        page.get_by_label("Scenario name").fill("Reduce agenda scope")
+        page.locator("details").filter(has_text="Add a scenario manually").locator("summary").click()\n        page.get_by_label("Scenario name").fill("Reduce agenda scope")
         page.get_by_label("Assumptions (one per line)").fill("The agenda can be shortened.\nOwners agree.")
         page.get_by_label("Expected outcome and trade-offs").fill(
             "Meetings may be shorter; some topics may move to follow-up."
