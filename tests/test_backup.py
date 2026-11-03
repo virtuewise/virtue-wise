@@ -21,7 +21,9 @@ def configure_paths(tmp_path, monkeypatch):
 
 
 def test_systemd_backup_service_uses_a_restricted_sandbox():
-    unit_path = Path(__file__).resolve().parents[1] / "deploy" / "systemd" / "virtue-wise-backup.service"
+    unit_path = (
+        Path(__file__).resolve().parents[1] / "deploy" / "systemd" / "virtue-wise-backup.service"
+    )
     unit = unit_path.read_text(encoding="utf-8")
 
     required = [
