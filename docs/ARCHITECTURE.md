@@ -23,6 +23,12 @@ VIRTUE WISE is a local FastAPI application serving a static HTML/CSS/JavaScript 
 - Export the model as JSON and import a JSON file after schema and cross-reference validation.
 - Delete the saved model.
 
+## Confirmed future workspace policy
+
+The selected multi-user product policy is **private by default, with explicit, revocable sharing**. Each project will have one owner. Other users receive access only through an explicit project-scoped grant to their authenticated identity. There will be no implicit organization-wide access or anonymous/public sharing links. Owners can revoke grants, and revocation must be enforced on subsequent server-side authorization checks. Read, edit, import, export, and delete paths must all apply the same project-level policy.
+
+This is a product decision, not an implemented capability. The current prototype still has one local project model and no accounts, project ownership, sharing records, or authorization. The initial permission vocabulary, invitation lifecycle, tenant boundaries, and deployment topology remain to be settled before implementation. See [the authentication and authorization design](AUTHENTICATION_DESIGN.md).
+
 ## Data and trust boundaries
 
 Statements represent user-provided inputs. Hypotheses remain separate records with explicit uncertainty and review status. Review decisions do not promote hypotheses into verified facts or alter source statements. Editing a linked statement or materially changing a hypothesis resets that hypothesis to proposed and clears its prior review note, so an earlier decision is not silently carried over to changed content. Imported models must use the supported schema version, unique record IDs, and valid evidence references.
