@@ -80,6 +80,20 @@ def load_model() -> ProjectModel:
     return ProjectModel.model_validate_json(row[0])
 
 
+def check_database() -> None:
+    """Check SQLite integrity and validate the persisted model without writing it."""
+    connection = _connect()
+    try:
+        integrity = connection.execute("PRAGMA quick_check").fetchone()
+        if integrity is None or integrity[0] != "ok":
+            raise sqlite3.DatabaseError("Project database integrity check failed.")
+        row = connection.execute("SELECT payload FROM project_model WHERE singleton = 1").fetchone()
+        if row is not None:
+            ProjectModel.model_validate_json(row[0])
+    finally:
+        connection.close()
+
+
 def _revision_for_payload(payload: str) -> str:
     """Return a deterministic strong revision token for one stored payload."""
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
