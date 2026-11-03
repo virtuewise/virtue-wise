@@ -69,7 +69,7 @@ The reviewer should inspect the source at the exact review commit and the curren
 - [Release readiness](RELEASE_READINESS.md)
 - [Local deployment ADR](decisions/0001-local-first-deployment.md)
 - [Browser acceptance](ACCEPTANCE.md)
-- [AI provider acceptance](AI_PROVIDER_ACCEPTANCE.md), when present on the reviewed base revision
+- [Local AI provider configuration](LOCAL_AI.md)
 - [Network-deployment security gate](https://github.com/virtuewise/virtue-wise/issues/7)
 
 ## Reproducible checks
@@ -108,4 +108,4 @@ The reviewer should attach a report containing:
 - Residual risks and explicit scope limitations.
 - Final outcome and any conditions for approval.
 
-**Release gate:** do not mark the security review complete until an independent reviewer has produced and signed off on this record. Keep issue #7 open until every applicable network-deployment requirement is satisfied or formally excluded by the accepted local-only deployment boundary.
+**Release gate:** do not mark the security review complete until an independent reviewer has produced and signed off on this record. Keep issue #7 open as the gate for any future network deployment; acceptance of the local-only first release does not approve network deployment or close that issue.
