@@ -254,7 +254,7 @@ def create_analysis_draft(user_text: str, model_name: str, project_model) -> Ana
             object_pairs_hook=_unique_json_object,
             parse_constant=lambda value: (_ for _ in ()).throw(ValueError(value)),
         )
-        draft = AnalysisDraft.model_validate(parsed_content)
+        draft = AnalysisDraft.model_validate(parsed_content).model_copy(update={"warnings": []})
     except (ValidationError, ValueError, RecursionError) as exc:
         raise AnalysisInvalidResponse(
             "The local model response did not match the required analysis structure. Try again."
