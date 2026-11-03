@@ -285,7 +285,7 @@ def test_opencode_analysis_disables_tools_and_deletes_temporary_session(monkeypa
     )
 
     message_call = next(call for call in calls if call[0].endswith("/message"))
-    assert message_call[1]["tools"] == {}
+    assert message_call[1]["tools"] == {"*": False}
     assert result.summary == "A review-only result."
     assert calls[-1][0] == "/session/session-123"
     assert calls[-1][2] == "DELETE"
