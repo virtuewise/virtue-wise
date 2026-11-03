@@ -569,8 +569,19 @@ def list_provider_catalog() -> list[dict]:
         }
     )
 
-    compatible = _compatible_config()
-    compatible_models = []
+    try:
+        compatible = _compatible_config()
+    except AnalysisError as exc:
+        providers.append(
+            {
+                "id": "compatible",
+                "label": "Custom OpenAI-compatible provider",
+                "available": False,
+                "models": [],
+                "note": str(exc),
+            }
+        )
+        compatible = None
     if compatible:
         _, _, names, label = compatible
         compatible_models = [
