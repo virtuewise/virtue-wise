@@ -752,9 +752,7 @@ def create_analysis_draft(
         try:
             available = {item["id"] for item in _openrouter_free_models(key)}
         except AnalysisError as exc:
-            raise AnalysisUnavailable(
-                "OpenRouter's free model catalog is unavailable."
-            ) from exc
+            raise AnalysisUnavailable("OpenRouter's free model catalog is unavailable.") from exc
         if model_name not in available:
             raise AnalysisUnavailable("That OpenRouter model is not currently listed as free.")
         return _chat_completion(
