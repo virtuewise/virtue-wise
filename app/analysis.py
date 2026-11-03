@@ -377,7 +377,7 @@ def _opencode_headers() -> dict[str, str]:
     password = os.environ.get("OPENCODE_SERVER_PASSWORD", "")
     if not password:
         return {}
-    token = base64.b64encode(f"{username}:{password}".encode("utf-8")).decode("ascii")
+    token = base64.b64encode(f"{username}:{password}".encode()).decode("ascii")
     return {"Authorization": f"Basic {token}"}
 
 
@@ -467,7 +467,9 @@ def _opencode_free_models() -> list[dict]:
                     "label": str(model.get("name") or model_id)[:120],
                     "provider": "opencode",
                     "free": True,
-                    "privacy": "OpenCode server; its configured inference provider receives the prompt",
+                    "privacy": (
+                        "OpenCode server; its configured inference provider receives the prompt"
+                    ),
                 }
             )
     return sorted(models, key=lambda item: (item["provider"], item["label"]))[:MAX_PROVIDER_MODELS]
@@ -558,7 +560,10 @@ def list_provider_catalog() -> list[dict]:
                 {item["id"]: item for item in openrouter_models}.values(),
                 key=lambda item: item["label"].lower(),
             )[:MAX_PROVIDER_MODELS],
-            "note": "Only models with zero published input and output prices are listed; account rate limits apply.",
+            "note": (
+                "Only models with zero published input and output prices are listed; "
+                "account rate limits apply."
+            ),
         }
     )
 
@@ -569,7 +574,10 @@ def list_provider_catalog() -> list[dict]:
             "label": "OpenCode — configured free models",
             "available": bool(opencode_models),
             "models": opencode_models,
-            "note": "Uses your local OpenCode server and only lists configured models with zero input and output prices.",
+            "note": (
+                "Uses your local OpenCode server and only lists configured models with "
+                "zero input and output prices."
+            ),
         }
     )
 
@@ -641,7 +649,7 @@ def _validated_draft(content: str, project_model) -> AnalysisDraft:
         draft = AnalysisDraft.model_validate(parsed).model_copy(update={"warnings": []})
     except (pydantic.ValidationError, ValueError, RecursionError) as exc:
         raise AnalysisInvalidResponse(
-            "The AI model response did not match the required analysis structure. Try another model."
+            "The AI model response did not match the required analysis structure. " "Try another model."
         ) from exc
     valid_ids = {item.id for item in project_model.statements}
     warnings = []
@@ -740,8 +748,10 @@ def create_analysis_draft(
             raise AnalysisUnavailable("Set OPENROUTER_API_KEY to enable OpenRouter free models.")
         try:
             available = {item["id"] for item in _openrouter_free_models(key)}
-        except AnalysisError:
-            raise AnalysisUnavailable("OpenRouter's free model catalog is unavailable.")
+        except AnalysisError as exc:
+            raise AnalysisUnavailable(
+                "OpenRouter's free model catalog is unavailable."
+            ) from exc
         if model_name not in available:
             raise AnalysisUnavailable("That OpenRouter model is not currently listed as free.")
         return _chat_completion(
