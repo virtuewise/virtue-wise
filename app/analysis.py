@@ -7,7 +7,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+import pydantic
 
 
 MAX_RESPONSE_BYTES = 1_000_000
@@ -43,12 +43,12 @@ class AnalysisInvalidResponse(AnalysisError):
     """The local model returned malformed or invalid structured output."""
 
 
-class StrictModel(BaseModel):
-    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+class StrictModel(pydantic.BaseModel):
+    model_config = pydantic.ConfigDict(extra="forbid", str_strip_whitespace=True)
 
 
 class HypothesisSuggestion(StrictModel):
-    claim: str = Field(min_length=1, max_length=2000)
+    claim: str = pydantic.Field(min_length=1, max_length=2000)
     rationale: str = Field(default="", max_length=2000)
     evidence_statement_ids: list[str] = Field(default_factory=list, max_length=100)
     counterpoints: list[str] = Field(default_factory=list, max_length=5)
@@ -261,7 +261,7 @@ def create_analysis_draft(user_text: str, model_name: str, project_model) -> Ana
             parse_constant=_reject_json_constant,
         )
         draft = AnalysisDraft.model_validate(parsed_content).model_copy(update={"warnings": []})
-    except (ValidationError, ValueError, RecursionError) as exc:
+    except (pydantic.ValidationError, ValueError, RecursionError) as exc:
         raise AnalysisInvalidResponse(
             "The local model response did not match the required analysis structure. Try again."
         ) from exc
