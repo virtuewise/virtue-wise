@@ -388,6 +388,18 @@ def test_security_headers_are_present_on_application_responses(tmp_path, monkeyp
     assert response.headers["permissions-policy"] == ("camera=(), microphone=(), geolocation=()")
 
 
+def test_project_api_responses_are_not_cached(tmp_path, monkeypatch):
+    client = test_client(tmp_path, monkeypatch)
+
+    model = client.get("/api/model")
+    exported = client.get("/api/export")
+    created = client.post("/api/statements", json={"text": "A private local note"})
+
+    assert model.headers["cache-control"] == "no-store"
+    assert exported.headers["cache-control"] == "no-store"
+    assert created.headers["cache-control"] == "no-store"
+
+
 def test_state_changing_request_rejects_cross_origin_origin_header(tmp_path, monkeypatch):
     client = test_client(tmp_path, monkeypatch)
     response = put_with_revision(
