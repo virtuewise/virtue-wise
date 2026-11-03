@@ -34,6 +34,36 @@ def test_create_and_verify_backup(tmp_path, monkeypatch):
         assert saved.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
 
 
+def test_backup_flushes_staging_file_before_publish_and_directory_after(tmp_path, monkeypatch):
+    configure_paths(tmp_path, monkeypatch)
+    store.save_model(ProjectModel(title="Durable publication"))
+    events = []
+    real_fsync = backup.os.fsync
+    real_replace = backup.os.replace
+
+    def record_fsync(descriptor):
+        mode = os.fstat(descriptor).st_mode
+        events.append("directory-fsync" if stat.S_ISDIR(mode) else "file-fsync")
+        return real_fsync(descriptor)
+
+    def record_replace(source, destination):
+        events.append("replace")
+        return real_replace(source, destination)
+
+    monkeypatch.setattr(backup.os, "fsync", record_fsync)
+    monkeypatch.setattr(backup.os, "replace", record_replace)
+
+    snapshot = backup.create_backup()
+
+    assert backup.verify_backup(snapshot)
+    assert events[0] == "file-fsync"
+    assert events[1] == "replace"
+    if os.name == "posix":
+        assert events[2] == "directory-fsync"
+    else:
+        assert events == ["file-fsync", "replace"]
+
+
 def test_backup_retention_keeps_newest_snapshots(tmp_path, monkeypatch):
     configure_paths(tmp_path, monkeypatch)
     store.save_model(ProjectModel(title="Project"))
