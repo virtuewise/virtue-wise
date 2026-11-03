@@ -261,15 +261,21 @@ def save_validated_model(model: ProjectModel) -> ProjectModel:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 
-def save_validated_model_if_current(model: ProjectModel, if_match: str | None) -> ProjectModel:
+def save_validated_model_if_current(
+    model: ProjectModel, if_match: str | None
+) -> ProjectModel:
     """Validate and atomically replace only the revision the caller observed."""
     if if_match is None:
-        raise HTTPException(status_code=428, detail="If-Match is required. Reload the project first.")
+        raise HTTPException(
+            status_code=428, detail="If-Match is required. Reload the project first."
+        )
     revision = if_match.strip()
     if revision.startswith('"') and revision.endswith('"'):
         revision = revision[1:-1]
     if not revision or "," in revision or revision == "*":
-        raise HTTPException(status_code=400, detail="A single strong If-Match revision is required.")
+        raise HTTPException(
+            status_code=400, detail="A single strong If-Match revision is required."
+        )
     try:
         validated = ProjectModel.model_validate(model.model_dump(mode="python"))
         return store.save_model_if_current(validated, revision)
