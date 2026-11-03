@@ -54,6 +54,12 @@
           <select id="ai-provider" disabled><option value="">Find available providers first</option></select>
           <label for="ai-model">Model</label>
           <select id="ai-model" disabled><option value="">Select a provider first</option></select>
+          <p class="field-help">Test a provider before using it. The test sends a fixed fictional sample only; it never reads or sends your saved workspace.</p>
+          <label class="consent-label" for="ai-self-test-consent">
+            <input id="ai-self-test-consent" type="checkbox">
+            I consent to send the fictional sample prompt to the selected provider.
+          </label>
+          <button id="test-ai-provider" class="button button-secondary" type="button" disabled>Test provider with fictional sample</button>
           <label class="consent-label" for="local-ai-consent">
             <input id="local-ai-consent" type="checkbox">
             I understand that the selected provider may receive the text above and my saved project context. I consent to this analysis.
