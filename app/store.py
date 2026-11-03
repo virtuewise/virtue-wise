@@ -73,9 +73,7 @@ def mutate_model(mutator: Callable[[ProjectModel], None]) -> ProjectModel:
     connection = _connect()
     try:
         connection.execute("BEGIN IMMEDIATE")
-        row = connection.execute(
-            "SELECT payload FROM project_model WHERE singleton = 1"
-        ).fetchone()
+        row = connection.execute("SELECT payload FROM project_model WHERE singleton = 1").fetchone()
         model = ProjectModel() if row is None else ProjectModel.model_validate_json(row[0])
         mutator(model)
         validated = ProjectModel.model_validate(model.model_dump(mode="python"))
