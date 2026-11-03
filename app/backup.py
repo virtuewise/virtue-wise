@@ -156,9 +156,7 @@ def create_backup(keep: int | None = None, protect: tuple[Path, ...] = ()) -> Pa
             temporary.unlink()
 
 
-def check_latest_backup(
-    max_age_hours: float = 26.0, now: datetime | None = None
-) -> Path:
+def check_latest_backup(max_age_hours: float = 26.0, now: datetime | None = None) -> Path:
     """Require the newest managed snapshot to be fresh and fully verifiable.
 
     Uses filesystem modification time as the operational freshness signal.
@@ -248,7 +246,9 @@ def _parser() -> argparse.ArgumentParser:
         "check", help="check that the newest managed backup is fresh and verified"
     )
     check.add_argument(
-        "--max-age-hours", type=float, default=26.0,
+        "--max-age-hours",
+        type=float,
+        default=26.0,
         help="maximum allowed age of the newest backup (default: 26 hours)",
     )
     prune = commands.add_parser("prune", help="remove snapshots beyond the retention count")
