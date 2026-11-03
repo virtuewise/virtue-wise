@@ -1,0 +1,99 @@
+"""Tests for verified SQLite backups and safe restore behavior."""
+
+import sqlite3
+
+import pytest
+
+from app import backup, store
+from app.models import ProjectModel
+
+
+def configure_paths(tmp_path, monkeypatch):
+    database = tmp_path / "data" / "virtue-wise.sqlite3"
+    backups = tmp_path / "separate-backups"
+    monkeypatch.setenv("VIRTUE_WISE_DB", str(database))
+    monkeypatch.setenv("VIRTUE_WISE_BACKUP_DIR", str(backups))
+    return database, backups
+
+
+def test_create_and_verify_backup(tmp_path, monkeypatch):
+    database, backups = configure_paths(tmp_path, monkeypatch)
+    store.save_model(ProjectModel(title="Verified project"))
+
+    snapshot = backup.create_backup()
+
+    assert snapshot.parent == backups
+    assert snapshot.exists()
+    assert snapshot.stat().st_mode & 0o777 == 0o600
+    assert backup.verify_backup(snapshot) == snapshot.resolve()
+    with sqlite3.connect(database) as live, sqlite3.connect(snapshot) as saved:
+        assert live.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+        assert saved.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+
+
+def test_backup_retention_keeps_newest_snapshots(tmp_path, monkeypatch):
+    configure_paths(tmp_path, monkeypatch)
+    store.save_model(ProjectModel(title="Project"))
+
+    first = backup.create_backup(keep=3)
+    second = backup.create_backup(keep=3)
+    third = backup.create_backup(keep=2)
+
+    snapshots = sorted(backup.backup_directory().glob("virtue-wise-*.sqlite3"))
+    assert first not in snapshots
+    assert second in snapshots
+    assert third in snapshots
+    assert len(snapshots) == 2
+
+
+def test_restore_preserves_pre_restore_database_and_validates_content(tmp_path, monkeypatch):
+    configure_paths(tmp_path, monkeypatch)
+    store.save_model(ProjectModel(title="Known good project"))
+    snapshot = backup.create_backup()
+
+    store.save_model(ProjectModel(title="Changed project"))
+    target, pre_restore = backup.restore_backup(snapshot)
+
+    assert target == store.database_path()
+    assert store.load_model().title == "Known good project"
+    assert pre_restore is not None
+    assert backup.verify_backup(pre_restore)
+    with sqlite3.connect(pre_restore) as connection:
+        payload = connection.execute(
+            "SELECT payload FROM project_model WHERE singleton = 1"
+        ).fetchone()[0]
+    assert ProjectModel.model_validate_json(payload).title == "Changed project"
+
+
+def test_restore_protects_selected_snapshot_from_retention_pruning(tmp_path, monkeypatch):
+    configure_paths(tmp_path, monkeypatch)
+    monkeypatch.setenv("VIRTUE_WISE_BACKUP_RETENTION_COUNT", "1")
+    store.save_model(ProjectModel(title="Restore source"))
+    snapshot = backup.create_backup()
+
+    store.save_model(ProjectModel(title="Current live model"))
+    _, pre_restore = backup.restore_backup(snapshot)
+
+    assert backup.verify_backup(snapshot)
+    assert pre_restore is not None
+    assert backup.verify_backup(pre_restore)
+    assert store.load_model().title == "Restore source"
+
+
+def test_invalid_restore_does_not_change_live_database(tmp_path, monkeypatch):
+    database, _ = configure_paths(tmp_path, monkeypatch)
+    store.save_model(ProjectModel(title="Keep this project"))
+    invalid = tmp_path / "invalid.sqlite3"
+    invalid.write_bytes(b"not a sqlite database")
+
+    with pytest.raises(ValueError):
+        backup.restore_backup(invalid)
+
+    assert store.load_model().title == "Keep this project"
+    assert database.exists()
+
+
+def test_backup_requires_existing_database(tmp_path, monkeypatch):
+    configure_paths(tmp_path, monkeypatch)
+    with pytest.raises(FileNotFoundError):
+        backup.create_backup()

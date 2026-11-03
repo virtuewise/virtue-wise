@@ -1,0 +1,16 @@
+[Unit]
+Description=VIRTUE WISE verified local database backup
+After=local-fs.target
+
+[Service]
+Type=oneshot
+User=virtuewise
+Group=virtuewise
+WorkingDirectory=/opt/virtue-wise
+EnvironmentFile=-/etc/virtue-wise/backup.env
+ExecStart=/opt/virtue-wise/.venv/bin/python -m app.backup create
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/virtue-wise /var/backups/virtue-wise

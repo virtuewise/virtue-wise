@@ -1,0 +1,11 @@
+[Unit]
+Description=Run VIRTUE WISE database backups daily
+
+[Timer]
+OnCalendar=*-*-* 02:15:00
+Persistent=true
+RandomizedDelaySec=10m
+Unit=virtue-wise-backup.service
+
+[Install]
+WantedBy=timers.target
