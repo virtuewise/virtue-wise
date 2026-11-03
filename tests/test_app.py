@@ -1,9 +1,12 @@
 """Behavioral tests for the VIRTUE WISE prototype API."""
 
+import asyncio
 import json
+import threading
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+from fastapi import Request
 from fastapi.testclient import TestClient
 
 from app import store
@@ -606,3 +609,35 @@ def test_database_mutation_rolls_back_when_callback_fails(tmp_path, monkeypatch)
     restored = store.load_model()
     assert restored.id == original.id
     assert restored.title == original.title
+
+
+def test_import_body_timeout_returns_408_without_replacing_model(tmp_path, monkeypatch):
+    client = test_client(tmp_path, monkeypatch)
+    client.put("/api/model", json={"title": "Preserve this model"})
+    monkeypatch.setattr("app.main.IMPORT_BODY_TIMEOUT_SECONDS", 0.01)
+    original_receive = Request.receive
+
+    async def slow_receive(request):
+        if request.url.path == "/api/import":
+            await asyncio.sleep(0.05)
+        return await original_receive(request)
+
+    monkeypatch.setattr(Request, "receive", slow_receive)
+    response = client.put(
+        "/api/import",
+        files={"upload": ("backup.json", b'{"schema_version": 1}', "application/json")},
+    )
+    assert response.status_code == 408
+    assert client.get("/api/model").json()["title"] == "Preserve this model"
+
+
+def test_import_capacity_limit_returns_503(tmp_path, monkeypatch):
+    client = test_client(tmp_path, monkeypatch)
+    monkeypatch.setattr("app.main.IMPORT_SLOT_WAIT_SECONDS", 0.01)
+    monkeypatch.setattr("app.main._IMPORT_LOCK", threading.BoundedSemaphore(0))
+    response = client.put(
+        "/api/import",
+        files={"upload": ("backup.json", b'{"schema_version": 1}', "application/json")},
+    )
+    assert response.status_code == 503
+    assert response.headers["retry-after"] == "1"
