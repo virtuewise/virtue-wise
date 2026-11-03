@@ -19,6 +19,38 @@ def configure_paths(tmp_path, monkeypatch):
     return database, backups
 
 
+def test_systemd_backup_service_uses_a_restricted_sandbox():
+    unit_path = (
+        __import__("pathlib").Path(__file__).resolve().parents[1]
+        / "deploy"
+        / "systemd"
+        / "virtue-wise-backup.service"
+    )
+    unit = unit_path.read_text(encoding="utf-8")
+
+    required = [
+        "NoNewPrivileges=true",
+        "PrivateDevices=true",
+        "PrivateNetwork=true",
+        "ProtectHome=true",
+        "ProtectSystem=strict",
+        "ProtectKernelTunables=true",
+        "ProtectKernelModules=true",
+        "ProtectControlGroups=true",
+        "RestrictAddressFamilies=AF_UNIX",
+        "RestrictNamespaces=true",
+        "RestrictSUIDSGID=true",
+        "CapabilityBoundingSet=",
+        "AmbientCapabilities=",
+        "ReadWritePaths=/var/lib/virtue-wise /var/backups/virtue-wise",
+    ]
+    for directive in required:
+        assert directive in unit
+
+    assert "ReadWritePaths=/" not in unit
+    assert "PrivateNetwork=false" not in unit
+
+
 def test_create_and_verify_backup(tmp_path, monkeypatch):
     database, backups = configure_paths(tmp_path, monkeypatch)
     store.save_model(ProjectModel(title="Verified project"))
