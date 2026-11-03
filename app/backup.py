@@ -23,6 +23,27 @@ def _create_private_sqlite_file(path: Path) -> None:
     os.close(descriptor)
 
 
+def _sync_file(path: Path) -> None:
+    """Flush a completed staging file before it is atomically published."""
+    descriptor = os.open(path, os.O_RDONLY)
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+
+
+def _sync_directory(path: Path) -> None:
+    """Persist directory-entry changes on POSIX after atomic publication."""
+    if os.name != "posix":
+        return
+    flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+    descriptor = os.open(path, flags)
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+
+
 def backup_directory() -> Path:
     """Resolve the backup directory independently from the live database."""
     default = database_path().parent / "backups"
@@ -124,8 +145,9 @@ def create_backup(keep: int | None = None, protect: tuple[Path, ...] = ()) -> Pa
 
         os.chmod(temporary, 0o600)
         _verify_database(temporary)
+        _sync_file(temporary)
         os.replace(temporary, destination)
-        os.chmod(destination, 0o600)
+        _sync_directory(directory)
         prune_backups(count, protect=protect)
         return destination
     finally:
@@ -162,8 +184,9 @@ def restore_backup(path: str | Path) -> tuple[Path, Path | None]:
 
         os.chmod(temporary, 0o600)
         _verify_database(temporary)
+        _sync_file(temporary)
         os.replace(temporary, target_path)
-        os.chmod(target_path, 0o600)
+        _sync_directory(target_path.parent)
     finally:
         if temporary.exists():
             temporary.unlink()
