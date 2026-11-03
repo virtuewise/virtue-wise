@@ -48,7 +48,7 @@ The sample files are in `deploy/systemd/`. They assume:
 - its virtual environment is at `/opt/virtue-wise/.venv`;
 - the database and backup directories are `/var/lib/virtue-wise` and `/var/backups/virtue-wise`.
 
-Adjust the service file's user, group, working directory, interpreter, and writable paths to match the host. Create the directories and environment file:
+Adjust the service file's user, group, working directory, interpreter, and writable paths to match the host. The sample oneshot unit is deliberately isolated: it has no network namespace access, no device access, no Linux capabilities, a read-only system view, and write access only to the database and backup directories. Keep `PrivateNetwork=true` and `RestrictAddressFamilies=AF_UNIX` for this file-only backup task; do not add network access unless a separately reviewed backup transport design requires it. The unit uses modern systemd sandbox directives, so validate compatibility on the target host with `systemd-analyze verify` before enabling it. Create the directories and environment file:
 
 ```bash
 sudo install -d -o virtuewise -g virtuewise -m 0700 /var/lib/virtue-wise /var/backups/virtue-wise
@@ -61,6 +61,7 @@ Put the three environment variables shown above in `/etc/virtue-wise/backup.env`
 ```bash
 sudo install -m 0644 deploy/systemd/virtue-wise-backup.service /etc/systemd/system/
 sudo install -m 0644 deploy/systemd/virtue-wise-backup.timer /etc/systemd/system/
+sudo systemd-analyze verify /etc/systemd/system/virtue-wise-backup.service /etc/systemd/system/virtue-wise-backup.timer
 sudo systemctl daemon-reload
 sudo systemctl enable --now virtue-wise-backup.timer
 systemctl list-timers virtue-wise-backup.timer

@@ -4,6 +4,7 @@ import os
 import sqlite3
 import stat
 import sys
+from pathlib import Path
 
 import pytest
 
@@ -17,6 +18,35 @@ def configure_paths(tmp_path, monkeypatch):
     monkeypatch.setenv("VIRTUE_WISE_DB", str(database))
     monkeypatch.setenv("VIRTUE_WISE_BACKUP_DIR", str(backups))
     return database, backups
+
+
+def test_systemd_backup_service_uses_a_restricted_sandbox():
+    unit_path = (
+        Path(__file__).resolve().parents[1] / "deploy" / "systemd" / "virtue-wise-backup.service"
+    )
+    unit = unit_path.read_text(encoding="utf-8")
+
+    required = [
+        "NoNewPrivileges=true",
+        "PrivateDevices=true",
+        "PrivateNetwork=true",
+        "ProtectHome=true",
+        "ProtectSystem=strict",
+        "ProtectKernelTunables=true",
+        "ProtectKernelModules=true",
+        "ProtectControlGroups=true",
+        "RestrictAddressFamilies=AF_UNIX",
+        "RestrictNamespaces=true",
+        "RestrictSUIDSGID=true",
+        "CapabilityBoundingSet=",
+        "AmbientCapabilities=",
+        "ReadWritePaths=/var/lib/virtue-wise /var/backups/virtue-wise",
+    ]
+    for directive in required:
+        assert directive in unit
+
+    assert "ReadWritePaths=/" not in unit.splitlines()
+    assert "PrivateNetwork=false" not in unit
 
 
 def test_create_and_verify_backup(tmp_path, monkeypatch):
