@@ -670,7 +670,7 @@ def _create_opencode_draft(model_id: str, user_text: str, project_model) -> Anal
             {
                 "model": {"providerID": provider_id, "modelID": selected_model},
                 "system": SYSTEM_PROMPT,
-                "tools": {},
+                "tools": {"*": False},
                 "parts": [{"type": "text", "text": _analysis_prompt(user_text, project_model)}],
             },
         )
