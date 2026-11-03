@@ -5,6 +5,8 @@ import json
 import os
 import sqlite3
 import stat
+import subprocess
+import sys
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -680,6 +682,97 @@ def test_database_write_transactions_serialize_independent_connections(tmp_path,
     assert len(saved.statements) == 40
     assert {item.text for item in saved.statements} == {
         f"Concurrent statement {index}" for index in range(40)
+    }
+
+
+def test_database_survives_independent_application_process_restart(tmp_path, monkeypatch):
+    database = tmp_path / "restart.sqlite3"
+    monkeypatch.setenv("VIRTUE_WISE_DB", str(database))
+    with TestClient(app) as client:
+        created = client.post(
+            "/api/statements",
+            json={
+                "text": "A saved observation survives a process restart.",
+                "source_label": "Restart acceptance fixture",
+            },
+        )
+        assert created.status_code == 201
+        statement_id = created.json()["statements"][0]["id"]
+        saved = put_with_revision(
+            client,
+            "/api/model",
+            json={
+                **client.get("/api/model").json(),
+                "title": "Restart recovery project",
+                "goal": "Verify durable local persistence.",
+            },
+        )
+        assert saved.status_code == 200
+
+    # Read and validate from a genuinely separate Python process, not a cached
+    # TestClient or a reused SQLite connection.
+    environment = os.environ.copy()
+    environment["VIRTUE_WISE_DB"] = str(database)
+    command = "; ".join(
+        (
+            "from app import store",
+            "store.check_database()",
+            "print(store.load_model().model_dump_json())",
+        )
+    )
+    completed = subprocess.run(
+        [sys.executable, "-c", command],
+        cwd=Path(__file__).resolve().parents[1],
+        env=environment,
+        capture_output=True,
+        check=True,
+        text=True,
+        timeout=20,
+    )
+    recovered = json.loads(completed.stdout.strip().splitlines()[-1])
+    assert recovered["title"] == "Restart recovery project"
+    assert recovered["goal"] == "Verify durable local persistence."
+    assert recovered["statements"][0]["id"] == statement_id
+    recovered_statement_text = recovered["statements"][0]["text"]
+    assert recovered_statement_text == "A saved observation survives a process restart."
+
+
+def test_independent_process_writes_do_not_lose_updates(tmp_path, monkeypatch):
+    database = tmp_path / "multiprocess.sqlite3"
+    monkeypatch.setenv("VIRTUE_WISE_DB", str(database))
+    store.load_model()
+    environment = os.environ.copy()
+    environment["VIRTUE_WISE_DB"] = str(database)
+    root = Path(__file__).resolve().parents[1]
+    command = "; ".join(
+        (
+            "import sys",
+            "from app import store",
+            "from app.models import Statement",
+            "index = sys.argv[1]",
+            "store.mutate_model(lambda model: model.statements.append("
+            "Statement(text='Independent process ' + index)))",
+        )
+    )
+
+    def write_from_process(index):
+        return subprocess.run(
+            [sys.executable, "-c", command, str(index)],
+            cwd=root,
+            env=environment,
+            capture_output=True,
+            check=True,
+            text=True,
+            timeout=30,
+        )
+
+    with ThreadPoolExecutor(max_workers=6) as executor:
+        list(executor.map(write_from_process, range(12)))
+
+    saved = store.load_model()
+    assert len(saved.statements) == 12
+    assert {item.text for item in saved.statements} == {
+        f"Independent process {index}" for index in range(12)
     }
 
 

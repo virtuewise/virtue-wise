@@ -1,6 +1,8 @@
 """Tests for the opt-in local model analysis adapter and API."""
 
 import json
+from io import BytesIO
+from urllib.error import HTTPError
 
 import pytest
 from fastapi.testclient import TestClient
@@ -31,7 +33,10 @@ class FakeOpener:
 
     def open(self, request, timeout):
         self.requests.append((request, timeout))
-        return FakeResponse(self.responses.pop(0))
+        response = self.responses.pop(0)
+        if isinstance(response, BaseException):
+            raise response
+        return FakeResponse(response)
 
 
 def test_local_model_url_rejects_non_loopback_hosts(monkeypatch):
@@ -380,3 +385,70 @@ def test_openrouter_analysis_uses_selected_free_model_and_bounded_json_output(mo
     assert headers == {"Authorization": "Bearer test-openrouter-key"}
     assert timeout == analysis.ANALYSIS_TIMEOUT_SECONDS
     assert method is None
+
+
+@pytest.mark.parametrize(
+    ("status", "message"),
+    [
+        (302, "unsafe redirect"),
+        (401, "rejected the request"),
+        (429, "rate limit"),
+        (503, "rejected the request"),
+    ],
+)
+def test_provider_http_failures_are_actionable(monkeypatch, status, message):
+    error = HTTPError(
+        "https://provider.example/v1/chat/completions",
+        status,
+        "provider error",
+        {},
+        BytesIO(b"provider response"),
+    )
+    opener = FakeOpener([error])
+    monkeypatch.setattr(analysis, "build_opener", lambda *_args: opener)
+
+    with pytest.raises(analysis.AnalysisUnavailable, match=message):
+        analysis._request_provider_json("https://provider.example/v1/chat/completions")
+
+    assert opener.requests[0][1] == analysis.PROVIDER_TIMEOUT_SECONDS
+
+
+def test_provider_timeout_is_reported_as_retryable(monkeypatch):
+    opener = FakeOpener([TimeoutError("provider timed out")])
+    monkeypatch.setattr(analysis, "build_opener", lambda *_args: opener)
+
+    with pytest.raises(analysis.AnalysisTimeout, match="took too long"):
+        analysis._request_provider_json(
+            "https://provider.example/v1/chat/completions",
+            timeout=analysis.ANALYSIS_TIMEOUT_SECONDS,
+        )
+
+
+def test_opencode_temporary_session_is_deleted_when_analysis_fails(monkeypatch):
+    calls = []
+
+    def fake_request(path, payload=None, *, method=None, timeout=4):
+        calls.append((path, method))
+        if path == "/config/providers":
+            return {
+                "providers": [
+                    {
+                        "id": "openrouter",
+                        "models": {"free-model": {"cost": {"input": 0, "output": 0}}},
+                    }
+                ]
+            }
+        if path == "/session":
+            return {"id": "temporary-session"}
+        if path.endswith("/message"):
+            raise analysis.AnalysisUnavailable("simulated provider outage")
+        return {}
+
+    monkeypatch.setattr(analysis, "_opencode_request", fake_request)
+
+    with pytest.raises(analysis.AnalysisUnavailable, match="simulated provider outage"):
+        analysis.create_analysis_draft(
+            "Explore this idea.", "opencode", "openrouter/free-model", ProjectModel()
+        )
+
+    assert calls[-1] == ("/session/temporary-session", "DELETE")

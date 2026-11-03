@@ -24,12 +24,16 @@ def test_core_workflow_and_responsive_layout():
         expect(page.locator("#ai-model")).to_be_disabled()
         expect(page.get_by_role("button", name="Analyze with selected AI")).to_be_disabled()
 
-        # Keyboard navigation starts at the brand link and exposes visible focus.
+        # Keyboard users can skip directly to the workspace and navigate its sections.
         page.keyboard.press("Tab")
-        expect(page.locator(".brand")).to_be_focused()
-        assert page.locator(".brand").evaluate(
-            "(element) => getComputedStyle(element).outlineStyle !== 'none'"
-        )
+        expect(page.get_by_role("link", name="Skip to workspace")).to_be_focused()
+        page.keyboard.press("Enter")
+        expect(page.locator("#main-content")).to_be_focused()
+        expect(page.locator("#main-content")).to_be_in_viewport()
+        expect(page.get_by_role("navigation", name="Workspace sections")).to_be_visible()
+        expect(page.get_by_role("navigation", name="Workspace sections").get_by_role(
+            "link", name="Evidence"
+        )).to_have_attribute("href", "#statements-heading")
 
         # Interactive controls must expose a usable accessible name.
         unnamed_buttons = page.locator("button").evaluate_all(
@@ -175,6 +179,48 @@ def test_core_workflow_and_responsive_layout():
         expect(page.locator("#hypothesis-list li")).to_have_count(1)
         expect(page.locator(".scenario-card")).to_have_count(2)
 
+        # Stale browser edits receive a clear recovery instruction, never an overwrite.
+        project_details = page.locator("details").filter(has_text="Edit project details manually")
+        if not project_details.evaluate("(element) => element.open"):
+            project_details.locator("summary").click()
+        page.get_by_label("Project name").fill("Stale tab edit")
+        page.route("**/api/model", lambda route: route.fulfill(
+            status=412, content_type="application/json", body='{"detail":"stale revision"}'
+        ) if route.request.method == "PUT" else route.continue_())
+        page.get_by_role("button", name="Save project details").click()
+        expect(page.locator("#notice")).to_contain_text("changed elsewhere")
+        expect(page.get_by_role("button", name="Reload latest workspace")).to_be_visible()
+        page.unroute_all()
+        page.get_by_role("button", name="Reload latest workspace").click()
+        expect(page.locator("#notice")).to_contain_text("Ready.")
+
+        # Provider throttling is described in actionable, non-technical language.
+        page.route("**/api/analysis/status", lambda route: route.fulfill(
+            status=429, content_type="application/json", body='{"detail":"too many requests"}'
+        ))
+        page.get_by_role("button", name="Find available AI models").click()
+        expect(page.locator("#local-ai-status")).to_contain_text("rate-limiting requests")
+        page.unroute_all()
+        page.route("**/api/analysis/status", lambda route: route.fulfill(
+            status=503,
+            content_type="application/json",
+            body='{"detail":"The provider rate limit was reached. Wait and try again."}'
+        ))
+        page.get_by_role("button", name="Find available AI models").click()
+        expect(page.locator("#local-ai-status")).to_contain_text("provider rate limit was reached")
+        page.unroute_all()
+        page.route("**/api/analysis/status", lambda route: route.fulfill(
+            status=503,
+            content_type="application/json",
+            body='{"detail":"The project database is busy. Retry the request."}'
+        ))
+        page.get_by_role("button", name="Find available AI models").click()
+        expect(page.locator("#local-ai-status")).to_contain_text(
+            "local database is temporarily locked"
+        )
+        expect(page.locator("#local-ai-status")).not_to_contain_text("AI provider")
+        page.unroute_all()
+
         # Destructive action requires confirmation and returns an empty workspace.
         page.get_by_role("button", name="Delete local model").click()
         expect(page.locator("#notice")).to_contain_text("Local model deleted.")
@@ -193,3 +239,54 @@ def test_core_workflow_and_responsive_layout():
 
         assert not page_errors, f"Browser JavaScript errors: {page_errors}"
         browser.close()
+
+
+
+def test_two_browser_tabs_preserve_latest_revision_and_recover():
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch()
+        context = browser.new_context(viewport={"width": 1280, "height": 900})
+        first = context.new_page()
+        second = context.new_page()
+        first.goto(BASE_URL, wait_until="networkidle")
+        second.goto(BASE_URL, wait_until="networkidle")
+        expect(first.locator("#notice")).to_contain_text("Ready.")
+        expect(second.locator("#notice")).to_contain_text("Ready.")
+
+        first.locator("details").filter(has_text="Edit project details manually").locator(
+            "summary"
+        ).click()
+        second.locator("details").filter(has_text="Edit project details manually").locator(
+            "summary"
+        ).click()
+        first.get_by_label("Project name").fill("Saved from first tab")
+        first.get_by_role("button", name="Save project details").click()
+        expect(first.locator("#notice")).to_contain_text("Saved locally.")
+
+        second.get_by_label("Project name").fill("Stale edit from second tab")
+        second.get_by_role("button", name="Save project details").click()
+        expect(second.locator("#notice")).to_contain_text("changed elsewhere")
+        expect(second.get_by_role("button", name="Reload latest workspace")).to_be_visible()
+        second.get_by_role("button", name="Reload latest workspace").click()
+        expect(second.locator("#notice")).to_contain_text("Ready.")
+        second.locator("details").filter(has_text="Edit project details manually").locator(
+            "summary"
+        ).click()
+        expect(second.get_by_label("Project name")).to_have_value("Saved from first tab")
+
+        # A fresh browser process and context must recover the committed project.
+        browser.close()
+        restarted_browser = playwright.chromium.launch()
+        restarted_context = restarted_browser.new_context(
+            viewport={"width": 1280, "height": 900}
+        )
+        restarted_page = restarted_context.new_page()
+        restarted_page.goto(BASE_URL, wait_until="networkidle")
+        expect(restarted_page.locator("#notice")).to_contain_text("Ready.")
+        restarted_page.locator("details").filter(
+            has_text="Edit project details manually"
+        ).locator("summary").click()
+        expect(restarted_page.get_by_label("Project name")).to_have_value(
+            "Saved from first tab"
+        )
+        restarted_browser.close()
