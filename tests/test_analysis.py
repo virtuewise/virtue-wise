@@ -263,6 +263,22 @@ def test_provider_self_test_uses_only_fictional_context(monkeypatch):
     assert project.scenarios == []
 
 
+def test_provider_self_test_rejects_empty_structured_response(monkeypatch):
+    monkeypatch.setattr(
+        analysis,
+        "create_analysis_draft",
+        lambda *_args: analysis.AnalysisDraft(),
+    )
+
+    response = TestClient(app).post(
+        "/api/analysis/self-test",
+        json={"provider": "ollama", "model": "qwen3:8b", "consent": True},
+    )
+
+    assert response.status_code == 502
+    assert response.json()["detail"] == "The provider returned an empty structured response."
+
+
 @pytest.mark.parametrize(
     ("provider_error", "status_code"),
     [
