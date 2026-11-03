@@ -469,6 +469,48 @@ def _opencode_free_models() -> list[dict]:
     return sorted(models, key=lambda item: (item["provider"], item["label"]))[:MAX_PROVIDER_MODELS]
 
 
+def _openrouter_free_models(key: str) -> list[dict]:
+    models = [
+        {
+            "id": "openrouter/free",
+            "label": "OpenRouter Free Models Router (automatic selection)",
+            "free": True,
+            "privacy": "hosted by the selected OpenRouter inference provider",
+        }
+    ]
+    response = _request_provider_json(
+        OPENROUTER_MODELS_URL,
+        headers={"Authorization": f"Bearer {key}"},
+        timeout=4,
+    )
+    catalog_items = response.get("data", [])
+    if not isinstance(catalog_items, list):
+        return models
+    for item in catalog_items:
+        if not isinstance(item, dict):
+            continue
+        model_id = item.get("id")
+        pricing = item.get("pricing")
+        if (
+            isinstance(model_id, str)
+            and isinstance(pricing, dict)
+            and _is_zero_price(pricing.get("prompt"))
+            and _is_zero_price(pricing.get("completion"))
+        ):
+            models.append(
+                {
+                    "id": model_id,
+                    "label": str(item.get("name") or model_id)[:120],
+                    "free": True,
+                    "privacy": "hosted by the selected OpenRouter inference provider",
+                }
+            )
+    return sorted(
+        {item["id"]: item for item in models}.values(),
+        key=lambda item: item["label"].lower(),
+    )[:MAX_PROVIDER_MODELS]
+
+
 def list_provider_catalog() -> list[dict]:
     """List only configured providers; free hosted models are filtered by published zero pricing."""
     providers = []
@@ -493,43 +535,16 @@ def list_provider_catalog() -> list[dict]:
     key = _openrouter_key()
     if key:
         try:
-            response = _request_provider_json(
-                OPENROUTER_MODELS_URL,
-                headers={"Authorization": f"Bearer {key}"},
-                timeout=4,
-            )
-            catalog_items = response.get("data", [])
-            if not isinstance(catalog_items, list):
-                catalog_items = []
-            for item in catalog_items:
-                if not isinstance(item, dict):
-                    continue
-                model_id = item.get("id")
-                pricing = item.get("pricing")
-                if (
-                    isinstance(model_id, str)
-                    and isinstance(pricing, dict)
-                    and _is_zero_price(pricing.get("prompt"))
-                    and _is_zero_price(pricing.get("completion"))
-                ):
-                    openrouter_models.append(
-                        {
-                            "id": model_id,
-                            "label": str(item.get("name") or model_id)[:120],
-                            "free": True,
-                            "privacy": "hosted by the selected OpenRouter inference provider",
-                        }
-                    )
-            openrouter_models.append(
+            openrouter_models = _openrouter_free_models(key)
+        except AnalysisError:
+            openrouter_models = [
                 {
                     "id": "openrouter/free",
                     "label": "OpenRouter Free Models Router (automatic selection)",
                     "free": True,
                     "privacy": "hosted by the selected OpenRouter inference provider",
                 }
-            )
-        except AnalysisError:
-            openrouter_models = []
+            ]
     providers.append(
         {
             "id": "openrouter",
@@ -706,12 +721,10 @@ def create_analysis_draft(
         key = _openrouter_key()
         if not key:
             raise AnalysisUnavailable("Set OPENROUTER_API_KEY to enable OpenRouter free models.")
-        available = {
-            model["id"]
-            for provider_entry in list_provider_catalog()
-            if provider_entry["id"] == "openrouter"
-            for model in provider_entry["models"]
-        }
+        try:
+            available = {item["id"] for item in _openrouter_free_models(key)}
+        except AnalysisError:
+            raise AnalysisUnavailable("OpenRouter's free model catalog is unavailable.")
         if model_name not in available:
             raise AnalysisUnavailable("That OpenRouter model is not currently listed as free.")
         return _chat_completion(
