@@ -65,6 +65,21 @@ def test_restore_preserves_pre_restore_database_and_validates_content(tmp_path, 
     assert ProjectModel.model_validate_json(payload).title == "Changed project"
 
 
+def test_restore_protects_selected_snapshot_from_retention_pruning(tmp_path, monkeypatch):
+    configure_paths(tmp_path, monkeypatch)
+    monkeypatch.setenv("VIRTUE_WISE_BACKUP_RETENTION_COUNT", "1")
+    store.save_model(ProjectModel(title="Restore source"))
+    snapshot = backup.create_backup()
+
+    store.save_model(ProjectModel(title="Current live model"))
+    _, pre_restore = backup.restore_backup(snapshot)
+
+    assert backup.verify_backup(snapshot)
+    assert pre_restore is not None
+    assert backup.verify_backup(pre_restore)
+    assert store.load_model().title == "Restore source"
+
+
 def test_invalid_restore_does_not_change_live_database(tmp_path, monkeypatch):
     database, _ = configure_paths(tmp_path, monkeypatch)
     store.save_model(ProjectModel(title="Keep this project"))
