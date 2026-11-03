@@ -2,7 +2,7 @@
 
 **Status:** operating procedure for the local prototype, not a production-readiness claim. The security gate in [issue #7](https://github.com/virtuewise/virtue-wise/issues/7) must be satisfied before any network deployment.
 
-The first-release deployment boundary is documented in [ADR 0001](decisions/0001-local-first-deployment.md): single-user, loopback-only, local SQLite. Authentication and authorization are intentionally deferred for this boundary; any LAN, team, self-hosted network, or cloud deployment requires a replacement architecture decision and independent security review first.
+The first-release deployment boundary is documented in [ADR 0001](decisions/0001-local-first-deployment.md): single-user, loopback-only, local SQLite. Authentication and authorization are intentionally deferred for this boundary; any LAN, team, self-hosted network, or cloud deployment requires a replacement architecture decision and independent security review first. The [independent security review brief](SECURITY_REVIEW_BRIEF.md) lists the review scope, evidence, known limitations, and required sign-off record.
 
 For local data deletion, schema-change handling, patching, and incident response, follow the [local operations runbook](OPERATIONS_RUNBOOK.md). These procedures do not satisfy the separate network-deployment security gate.
 
