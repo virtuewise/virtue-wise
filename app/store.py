@@ -60,6 +60,11 @@ def _revision_for_payload(payload: str) -> str:
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
+def revision_for_model(model: ProjectModel) -> str:
+    """Return the strong revision token represented by a persisted model."""
+    return _revision_for_payload(model.model_dump_json())
+
+
 def load_model_with_revision() -> tuple[ProjectModel, str]:
     """Load the model and its compare-and-swap revision.
 
