@@ -68,7 +68,7 @@ def load_model_with_revision() -> tuple[ProjectModel, str]:
     if row is None:
         return ProjectModel(), "empty"
     model = ProjectModel.model_validate_json(row[0])
-    return model, model.updated_at.isoformat()
+    return model, model.model_dump(mode="json")["updated_at"]
 
 
 def _write_model(connection: sqlite3.Connection, model: ProjectModel) -> None:
@@ -121,7 +121,7 @@ def save_model_if_current(model: ProjectModel, expected_revision: str) -> Projec
         current_revision = (
             "empty"
             if row is None
-            else ProjectModel.model_validate_json(row[0]).updated_at.isoformat()
+            else ProjectModel.model_validate_json(row[0]).model_dump(mode="json")["updated_at"]
         )
         if current_revision != expected_revision:
             raise StoreConflictError("The project changed since it was loaded. Reload before replacing it.")
