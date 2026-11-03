@@ -714,8 +714,7 @@ def test_database_survives_independent_application_process_restart(tmp_path, mon
     environment = os.environ.copy()
     environment["VIRTUE_WISE_DB"] = str(database)
     command = (
-        "from app import store; "
-        "store.check_database(); "
+        "from app import store; store.check_database(); "
         "print(store.load_model().model_dump_json())"
     )
     completed = subprocess.run(
