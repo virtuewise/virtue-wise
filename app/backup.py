@@ -99,9 +99,7 @@ def create_backup(
     """Create and verify an atomic SQLite snapshot, then prune older snapshots."""
     source_path = database_path()
     if not source_path.is_file():
-        raise FileNotFoundError(
-            f"Database does not exist yet; no backup created: {source_path}"
-        )
+        raise FileNotFoundError(f"Database does not exist yet; no backup created: {source_path}")
     count = retention_count() if keep is None else keep
     if count < 1:
         raise ValueError("Backup retention count must be at least 1.")
