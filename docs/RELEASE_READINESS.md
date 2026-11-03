@@ -28,7 +28,7 @@ The application does not start its own scheduler. Automated daily backups only o
 
 The automated suite exercises both JSON export → delete → import recovery and SQLite snapshot → verify → restore recovery. These are regression checks, not substitutes for periodically restoring a scheduled backup on a disposable instance.
 
-For database-level recovery, stop the application and preserve a copy of the database and any SQLite sidecar files before investigation. JSON export/import is the intended portable recovery route for the current prototype. No recovery-time or recovery-point objective is promised.
+For database-level recovery, stop the application and use `python -m app.backup restore PATH --yes`; the tool verifies the source snapshot and creates a pre-restore backup before replacement. JSON export/import remains the portable recovery route. With the supplied daily scheduler installed and running successfully, the intended recovery-point objective is up to 24 hours; this is not guaranteed until the timer is monitored. Recovery time has not been measured, so no RTO is claimed.
 
 ## Release checklist
 
