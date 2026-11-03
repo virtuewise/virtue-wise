@@ -24,12 +24,15 @@ def test_core_workflow_and_responsive_layout():
         expect(page.locator("#ai-model")).to_be_disabled()
         expect(page.get_by_role("button", name="Analyze with selected AI")).to_be_disabled()
 
-        # Keyboard navigation starts at the brand link and exposes visible focus.
+        # Keyboard users can skip directly to the workspace and navigate its sections.
         page.keyboard.press("Tab")
-        expect(page.locator(".brand")).to_be_focused()
-        assert page.locator(".brand").evaluate(
-            "(element) => getComputedStyle(element).outlineStyle !== 'none'"
-        )
+        expect(page.get_by_role("link", name="Skip to workspace")).to_be_focused()
+        page.keyboard.press("Enter")
+        expect(page.locator("#main-content")).to_be_in_viewport()
+        expect(page.get_by_role("navigation", name="Workspace sections")).to_be_visible()
+        expect(page.get_by_role("navigation", name="Workspace sections").get_by_role(
+            "link", name="Evidence"
+        )).to_have_attribute("href", "#statements-heading")
 
         # Interactive controls must expose a usable accessible name.
         unnamed_buttons = page.locator("button").evaluate_all(
@@ -174,6 +177,25 @@ def test_core_workflow_and_responsive_layout():
         expect(page.locator("#statement-list li")).to_have_count(3)
         expect(page.locator("#hypothesis-list li")).to_have_count(1)
         expect(page.locator(".scenario-card")).to_have_count(2)
+
+        # Stale browser edits receive a clear recovery instruction, never an overwrite.
+        page.locator("details").filter(has_text="Edit project details manually").locator("summary").click()
+        page.get_by_label("Project name").fill("Stale tab edit")
+        page.route("**/api/model", lambda route: route.fulfill(
+            status=412, content_type="application/json", body='{"detail":"stale revision"}'
+        ) if route.request.method == "PUT" else route.continue_())
+        page.get_by_role("button", name="Save project details").click()
+        expect(page.locator("#notice")).to_contain_text("changed elsewhere")
+        page.unroute_all()
+        page.reload(wait_until="networkidle")
+
+        # Provider throttling is described in actionable, non-technical language.
+        page.route("**/api/analysis/status", lambda route: route.fulfill(
+            status=429, content_type="application/json", body='{"detail":"too many requests"}'
+        ))
+        page.get_by_role("button", name="Find available AI models").click()
+        expect(page.locator("#local-ai-status")).to_contain_text("rate-limiting requests")
+        page.unroute_all()
 
         # Destructive action requires confirmation and returns an empty workspace.
         page.get_by_role("button", name="Delete local model").click()
