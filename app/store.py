@@ -124,7 +124,9 @@ def save_model_if_current(model: ProjectModel, expected_revision: str) -> Projec
             else ProjectModel.model_validate_json(row[0]).model_dump(mode="json")["updated_at"]
         )
         if current_revision != expected_revision:
-            raise StoreConflictError("The project changed since it was loaded. Reload before replacing it.")
+            raise StoreConflictError(
+                "The project changed since it was loaded. Reload before replacing it."
+            )
         _write_model(connection, validated)
         return validated
 
