@@ -107,9 +107,9 @@ def test_core_workflow_and_responsive_layout():
         expect(dialog).to_be_visible()
         dialog.get_by_label("Scenario name").fill("Reduce agenda scope carefully")
         dialog.get_by_role("button", name="Save changes").click()
-        expect(page.locator(".scenario-card")).to_contain_text(
-            "Reduce agenda scope carefully"
-        )
+        expect(
+            page.locator(".scenario-card").filter(has_text="Reduce agenda scope carefully")
+        ).to_be_visible()
 
         # JSON export is downloadable; validated import restores the documented demo.
         with page.expect_download() as download_info:
