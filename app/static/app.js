@@ -23,12 +23,24 @@ async function request(url, options = {}) {
   return response.status === 204 ? null : response.json();
 }
 
+let actionInProgress = false;
+
 async function runAction(action, successMessage = "Saved locally.") {
+  if (actionInProgress) return;
+  actionInProgress = true;
+  const controls = [...document.querySelectorAll("button, input, select, textarea")];
+  const disabledStates = controls.map((control) => control.disabled);
+  controls.forEach((control) => { control.disabled = true; });
+  document.body.setAttribute("aria-busy", "true");
   try {
     await action();
     announce(successMessage);
   } catch (error) {
     announce(error.message || "Something went wrong.", true);
+  } finally {
+    controls.forEach((control, index) => { control.disabled = disabledStates[index]; });
+    document.body.removeAttribute("aria-busy");
+    actionInProgress = false;
   }
 }
 
