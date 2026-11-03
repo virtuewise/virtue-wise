@@ -6,7 +6,7 @@ import argparse
 import os
 import sqlite3
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
@@ -81,7 +81,6 @@ def prune_backups(
         reverse=True,
     )
     protected = {path.resolve() for path in protect}
-    preserved = [path for path in snapshots if path.resolve() in protected]
     candidates = [path for path in snapshots if path.resolve() not in protected]
     removed = candidates[keep:]
     for path in removed:
@@ -100,7 +99,7 @@ def create_backup(keep: int | None = None, protect: tuple[Path, ...] = ()) -> Pa
 
     directory = backup_directory()
     directory.mkdir(parents=True, exist_ok=True)
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S%fZ")
     destination = directory / f"{BACKUP_PREFIX}{stamp}.sqlite3"
     temporary = directory / f".{destination.name}.{uuid4().hex}.tmp"
 
