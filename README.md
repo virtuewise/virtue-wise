@@ -6,7 +6,7 @@ VIRTUE WISE explores ways to help people connect information, understand the bas
 
 > **Core idea:** move beyond answers alone toward understanding that can be examined, corrected, and used.
 
-[Vision](docs/VISION.md) · [Prototype plan](docs/PROTOTYPE.md) · [Architecture](docs/ARCHITECTURE.md) · [Acceptance walkthrough](docs/ACCEPTANCE.md) · [Model evaluation protocol](docs/MODEL_EVALUATION.md) · [Threat model](docs/THREAT_MODEL.md) · [Authentication design](docs/AUTHENTICATION_DESIGN.md) · [Import security](docs/IMPORT_SECURITY.md) · [Release and recovery](docs/RELEASE_READINESS.md) · [Roadmap](ROADMAP.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
+[Vision](docs/VISION.md) · [Prototype plan](docs/PROTOTYPE.md) · [Architecture](docs/ARCHITECTURE.md) · [Acceptance walkthrough](docs/ACCEPTANCE.md) · [Model evaluation protocol](docs/MODEL_EVALUATION.md) · [Threat model](docs/THREAT_MODEL.md) · [Authentication design](docs/AUTHENTICATION_DESIGN.md) · [Import security](docs/IMPORT_SECURITY.md) · [Backup operations](docs/BACKUP_OPERATIONS.md) · [Release and recovery](docs/RELEASE_READINESS.md) · [Roadmap](ROADMAP.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
 
 ## Why this project
 
@@ -44,6 +44,10 @@ Open <http://127.0.0.1:8000>. API documentation is available at <http://127.0.0.
 
 By default, SQLite data is stored at `data/virtue-wise.sqlite3`. Set `VIRTUE_WISE_DB` to use another path. The application has no authentication or encryption at rest: keep it bound to localhost and do not enter sensitive data.
 
+## Backups
+
+Create and verify a local SQLite snapshot with `python -m app.backup create`; see [backup operations](docs/BACKUP_OPERATIONS.md) for retention, the sample daily systemd timer, verification, and restore instructions. The timer must be installed separately; backup files are not encrypted by the app.
+
 Run quality checks:
 
 ```bash
@@ -56,6 +60,7 @@ pytest
 
 - Single local model in SQLite; record-level edits use database write transactions across independent local processes. Full-model replacement and import require an `If-Match` revision from the latest model read and reject stale clients with HTTP 412. Keep the database on a local filesystem; multi-host operation is unsupported. Imports have a 2.1 MB request-body cap, 30-second body-read timeout, and two-request per-process concurrency limit; upstream ingress limits are still required.
 - No authentication, authorization, sessions, encryption at rest, or session-bound CSRF tokens. Basic request-origin and Host checks are defense in depth, not production hardening.
+- A verified SQLite backup CLI and sample daily systemd timer are provided, but scheduling must be installed by the operator; backups are not encrypted by the app.
 - JSON import supports the current schema version only; migrations are not implemented.
 - Scenario comparison is qualitative, not a prediction engine.
 - Editing uses native HTML dialog forms with labels, validation, save/cancel controls, and visible error feedback.
