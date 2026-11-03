@@ -95,7 +95,9 @@ def test_analysis_uses_structured_local_output_and_filters_unknown_evidence(monk
     assert chat_request["format"]["type"] == "object"
     assert "untrusted data" in chat_request["messages"][0]["content"]
     assert statement.id in chat_request["messages"][1]["content"]
-    assert all(request.full_url.startswith("http://127.0.0.1:11434/") for request, _ in opener.requests)
+    assert all(
+        request.full_url.startswith("http://127.0.0.1:11434/") for request, _ in opener.requests
+    )
 
 
 def test_analysis_rejects_uninstalled_model(monkeypatch):
