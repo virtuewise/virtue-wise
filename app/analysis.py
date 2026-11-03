@@ -649,7 +649,10 @@ def _validated_draft(content: str, project_model) -> AnalysisDraft:
         draft = AnalysisDraft.model_validate(parsed).model_copy(update={"warnings": []})
     except (pydantic.ValidationError, ValueError, RecursionError) as exc:
         raise AnalysisInvalidResponse(
-            "The AI model response did not match the required analysis structure. " "Try another model."
+            (
+                "The AI model response did not match the required analysis structure. "
+                "Try another model."
+            )
         ) from exc
     valid_ids = {item.id for item in project_model.statements}
     warnings = []
