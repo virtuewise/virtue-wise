@@ -284,8 +284,7 @@ def save_validated_model_if_current(
         )
     revision = entity_tag[1:-1]
     if revision != "empty" and (
-        len(revision) != 64
-        or any(character not in "0123456789abcdef" for character in revision)
+        len(revision) != 64 or any(character not in "0123456789abcdef" for character in revision)
     ):
         raise HTTPException(
             status_code=400, detail="A single strong If-Match revision is required."
