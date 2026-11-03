@@ -127,7 +127,10 @@ def _same_origin(source: str, request, *, is_referer: bool = False) -> bool:
 @app.middleware("http")
 async def serialize_mutations(request, call_next):
     """Serialize state-changing requests within this single application process."""
-    if request.method not in {"POST", "PUT", "PATCH", "DELETE"} or request.url.path == "/api/analysis/draft":
+    if (
+        request.method not in {"POST", "PUT", "PATCH", "DELETE"}
+        or request.url.path == "/api/analysis/draft"
+    ):
         return await call_next(request)
 
     acquired = await asyncio.to_thread(_MUTATION_LOCK.acquire, True, MUTATION_LOCK_TIMEOUT_SECONDS)
@@ -227,7 +230,9 @@ async def limit_analysis_request_size(request: Request, call_next):
         if size < 0:
             return JSONResponse(status_code=400, content={"detail": "Invalid request size."})
         if size > max_bytes:
-            return JSONResponse(status_code=413, content={"detail": "Analysis request is too large."})
+            return JSONResponse(
+                status_code=413, content={"detail": "Analysis request is too large."}
+            )
 
     chunks: list[dict] = []
     total = 0
@@ -239,7 +244,9 @@ async def limit_analysis_request_size(request: Request, call_next):
                     return Response(status_code=400)
                 total += len(message.get("body", b""))
                 if total > max_bytes:
-                    return JSONResponse(status_code=413, content={"detail": "Analysis request is too large."})
+                    return JSONResponse(
+                        status_code=413, content={"detail": "Analysis request is too large."}
+                    )
                 chunks.append(message)
                 if not message.get("more_body", False):
                     break
@@ -425,7 +432,9 @@ def create_analysis_draft(request: AnalysisRequest) -> dict:
         )
     acquired = _ANALYSIS_LOCK.acquire(timeout=1)
     if not acquired:
-        raise HTTPException(status_code=503, detail="A local analysis is already running. Retry shortly.")
+        raise HTTPException(
+            status_code=503, detail="A local analysis is already running. Retry shortly."
+        )
     try:
         model = store.load_model()
         draft = analysis.create_analysis_draft(request.text, request.model, model)
