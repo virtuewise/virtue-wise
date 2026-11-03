@@ -113,7 +113,6 @@ def create_backup(
     temporary = directory / f".{destination.name}.{uuid4().hex}.tmp"
 
     try:
-        try:
         source = sqlite3.connect(source_path, timeout=10)
         try:
             target = sqlite3.connect(temporary)
@@ -151,7 +150,6 @@ def restore_backup(path: str | Path) -> tuple[Path, Path | None]:
     pre_restore = create_backup(protect=(source_path,)) if target_path.is_file() else None
     temporary = target_path.with_name(f".{target_path.name}.{uuid4().hex}.restore")
     try:
-        try:
         source = sqlite3.connect(f"{source_path.as_uri()}?mode=ro", uri=True)
         try:
             target = sqlite3.connect(temporary)
