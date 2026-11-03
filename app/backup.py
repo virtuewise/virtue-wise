@@ -87,7 +87,7 @@ def prune_backups(
     protected = {path.resolve() for path in protect}
     preserved = [path for path in snapshots if path.resolve() in protected]
     candidates = [path for path in snapshots if path.resolve() not in protected]
-    removed = candidates[max(0, keep - len(preserved)) :]
+    removed = candidates[keep:]
     for path in removed:
         path.unlink()
     return removed
