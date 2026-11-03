@@ -490,7 +490,7 @@ def run_analysis_self_test(request: AnalysisSelfTestRequest) -> dict:
             "ok": True,
             "provider": request.provider,
             "model": request.model,
-            "summary": draft.summary,
+            "structured_response": True,
             "hypothesis_count": len(draft.hypotheses),
         }
     except analysis.AnalysisUnavailable as exc:
