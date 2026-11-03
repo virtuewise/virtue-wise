@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 
 from app import store
 from app.main import app
+from app.models import Statement
 
 
 def test_client(tmp_path, monkeypatch):
@@ -348,7 +349,7 @@ def test_record_deletions_preserve_saved_model_when_persistence_fails(tmp_path, 
     def fail_save(_model):
         raise OSError("simulated storage failure")
 
-    monkeypatch.setattr(store, "save_model", fail_save)
+    monkeypatch.setattr(store, "mutate_model", fail_save)
     statement_delete = client.delete(f"/api/statements/{statement['id']}")
     scenario_delete = client.delete(f"/api/scenarios/{scenario['id']}")
 
@@ -565,3 +566,43 @@ def test_chunked_import_request_without_content_length_is_bounded(tmp_path, monk
     )
     assert response.status_code == 413
     assert client.get("/api/model").json()["title"] == "Preserve this model"
+
+
+def test_database_write_transactions_serialize_independent_connections(tmp_path, monkeypatch):
+    monkeypatch.setenv("VIRTUE_WISE_DB", str(tmp_path / "concurrent.sqlite3"))
+    store.load_model()
+
+    def append_statement(index):
+        def mutate(model):
+            model.statements.append(Statement(text=f"Concurrent statement {index}"))
+
+        store.mutate_model(mutate)
+
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        list(executor.map(append_statement, range(40)))
+
+    saved = store.load_model()
+    assert len(saved.statements) == 40
+    assert {item.text for item in saved.statements} == {
+        f"Concurrent statement {index}" for index in range(40)
+    }
+
+
+def test_database_mutation_rolls_back_when_callback_fails(tmp_path, monkeypatch):
+    monkeypatch.setenv("VIRTUE_WISE_DB", str(tmp_path / "rollback.sqlite3"))
+    original = store.save_model(store.load_model())
+
+    def fail_after_mutation(model):
+        model.title = "This must not persist"
+        raise RuntimeError("simulated mutation failure")
+
+    try:
+        store.mutate_model(fail_after_mutation)
+    except RuntimeError as exc:
+        assert str(exc) == "simulated mutation failure"
+    else:
+        raise AssertionError("Expected mutation failure")
+
+    restored = store.load_model()
+    assert restored.id == original.id
+    assert restored.title == original.title

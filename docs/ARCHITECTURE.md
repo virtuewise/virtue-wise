@@ -2,7 +2,7 @@
 
 ## Current implementation
 
-VIRTUE WISE is a single-process FastAPI application serving a static HTML/CSS/JavaScript interface. Pydantic v2 validates API payloads and the versioned JSON model. SQLite stores one project model in a single row.
+VIRTUE WISE is a local FastAPI application serving a static HTML/CSS/JavaScript interface. Pydantic v2 validates API payloads and the versioned JSON model. SQLite stores one project model in a single row. Record-level read-modify-write operations use SQLite write transactions, so independent processes sharing the same local database serialize their mutations.
 
 - `app/models.py` defines project, statement, hypothesis, and scenario records and validates IDs and evidence references.
 - `app/store.py` owns SQLite persistence.
@@ -48,7 +48,7 @@ Open <http://127.0.0.1:8000>. API documentation is available at <http://127.0.0.
 - Scenarios are qualitative; the application does not estimate probabilities, causal effects, or future outcomes.
 - JSON import supports the current schema version only; there is no migration tooling.
 - There is no authentication, session management, authorization, encryption-at-rest layer, backup manager, or session-bound CSRF token. Basic Origin/Referer, Fetch Metadata, and Host checks are defense in depth only; missing browser origin metadata is allowed for non-browser API clients. See [the authentication design](AUTHENTICATION_DESIGN.md).
-- State-changing requests are serialized within one application process using a 10-second lock timeout. This prevents lost updates from concurrent mutations handled by that process, but does not coordinate multiple workers/processes or stale clients. Run a single worker only; see [release and recovery](RELEASE_READINESS.md).
+- Record-level statement, hypothesis, review, and scenario mutations acquire a SQLite `BEGIN IMMEDIATE` write transaction before reading the model, validate the resulting model, and commit or roll back as one unit. SQLite waits up to 10 seconds for a competing writer; an exhausted lock wait returns HTTP 503. A process-local request lock remains as an additional same-process guard. Explicit full-model replacement/import remains last-write-wins and has no ETag/If-Match stale-client check. Use one local database file on a local filesystem; multi-host/network-filesystem operation is unsupported. See [release and recovery](RELEASE_READINESS.md).
 - JSON imports are limited to 2 MB of file data, with a 2.1 MB application-level request-body guard that counts incoming ASGI chunks even when Content-Length is absent. Oversized requests are rejected before multipart parsing. UTF-8, duplicate object keys, non-standard numeric constants, and schema failures are rejected before persistence. Request-validation errors omit submitted values. Ingress-level body limits, upload/read timeouts, and global concurrent-upload limits must still be configured and verified at the server or reverse proxy; see [import security notes](IMPORT_SECURITY.md).
 - Editing uses native HTML dialog forms with associated labels, required-field validation, save/cancel controls, and visible save-error feedback. Manual keyboard and screen-reader verification remains outstanding.
 - The server should be bound to localhost. Do not expose it to an untrusted network or enter sensitive data.

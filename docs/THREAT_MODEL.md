@@ -6,7 +6,7 @@
 
 The current supported boundary is one trusted user running the FastAPI application on their own machine, bound to loopback (for example, `127.0.0.1`). Use fictional/non-sensitive data. Do not expose the service to a LAN, public interface, reverse proxy, or untrusted user. There is no multi-user identity or authorization model.
 
-The application has a static browser UI, JSON API, Pydantic validation, and one SQLite row containing the project model. It has no authentication, session security, CSRF-token mechanism, encryption-at-rest layer, or backup manager. It serializes state-changing requests with a process-local lock, but has no cross-process/multi-worker coordination or stale-write version checks. It also has limited browser-origin/Fetch Metadata checks and a loopback Host allowlist; these are defense-in-depth controls, not authentication or a complete CSRF mechanism.
+The application has a static browser UI, JSON API, Pydantic validation, and one SQLite row containing the project model. It has no authentication, session security, CSRF-token mechanism, encryption-at-rest layer, or backup manager. Record-level edits use SQLite `BEGIN IMMEDIATE` transactions to serialize independent local processes sharing one database file, with a 10-second busy timeout and HTTP 503 on lock exhaustion. A process-local request lock remains. Explicit full-model replacement/import remains last-write-wins without stale-client revision checks. It also has limited browser-origin/Fetch Metadata checks and a loopback Host allowlist; these are defense-in-depth controls, not authentication or a complete CSRF mechanism.
 
 ## Assets and security goals
 
@@ -35,7 +35,7 @@ Security goals are confidentiality from other local users/processes where the op
 | Malformed or oversized import | Crash, resource exhaustion, or accidental data loss | 2 MB file limit, 2.1 MB application-level request-body limit for both declared and absent Content-Length (including chunked transfer), strict UTF-8/JSON parsing, duplicate-key rejection, schema validation, and generic validation errors; server/proxy timeouts, ingress limits, and concurrent-upload controls remain required |
 | Duplicate IDs or invalid evidence links | Ambiguous records or broken provenance | Domain model validation rejects duplicate IDs, duplicate evidence links, and dangling references |
 | Storage write failure during a mutation | UI/API error or uncertain save result | SQLite transaction should preserve the previous committed row; failure-path tests and clear UI feedback are required |
-| Concurrent requests or multiple server workers | Lost updates from last-writer-wins replacement | A process-local lock serializes state-changing requests for one app process; no cross-process/multi-worker lock or optimistic version check; single worker only |
+| Concurrent record edits or explicit full-model replacement | Lost updates from last-writer-wins replacement | Record-level mutations use SQLite write transactions across local processes sharing one local file; lock waits are bounded at 10 seconds and return HTTP 503. Full-model replacement/import still has no ETag/If-Match stale-client check; multi-host/network-filesystem operation is unsupported |
 | Database loss, corruption, accidental deletion, or ransomware | Irrecoverable project loss | Manual JSON export is available; no automated backup, restore verification, or recovery procedure |
 | Vulnerable dependency or compromised build workflow | Code execution or data disclosure | CI checks are not a security review; dependency and workflow review are required before network deployment |
 
@@ -48,7 +48,7 @@ Security goals are confidentiality from other local users/processes where the op
 - Statement deletion is blocked while a hypothesis references it.
 - Editing linked statements or materially changing hypotheses resets their review state.
 - SQLite parameter binding is used for model writes; a single-row upsert keeps each save within a transaction.
-- State-changing requests are serialized within one application process; lock acquisition times out after 10 seconds with HTTP 503. This does not coordinate multiple processes or workers.
+- Record-level model mutations acquire a SQLite `BEGIN IMMEDIATE` transaction before reading, then validate and commit or roll back the model atomically. Independent processes sharing the same local database file serialize through SQLite; lock acquisition is bounded at 10 seconds and returns HTTP 503 on exhaustion. Explicit full-model replacement/import remains last-write-wins without stale-client revision checks.
 - A regression test exports, deletes, and restores a model through JSON import, checking project identity and representative linked content.
 - State-changing requests reject mismatched Origin/Referer and `Sec-Fetch-Site: cross-site`; Host headers are restricted to loopback names and the test host. Requests without Origin/Referer remain accepted for non-browser API clients.
 - The app is documented for loopback-only use and warns against sensitive data.
@@ -61,7 +61,7 @@ These controls reduce specific risks; they do not replace authentication, author
 2. Implement authentication and authorization for every protected UI/API operation, including export and deletion.
 3. Implement session-bound CSRF tokens and strict canonical-origin validation for the selected authentication model; review CORS, Host validation, cookie attributes, TLS termination, and security headers. The current origin middleware is only a baseline.
 4. Decide whether encryption at rest is required. If it is, specify key storage, rotation, backups, and recovery independently of the encrypted data.
-5. Add automated tests for access control, forged requests, import edge cases, persistence failures, deletion, concurrency, and error leakage. Before multi-worker deployment, replace the process-local lock with database-backed concurrency control and test cross-process stale-write behavior.
+5. Add automated tests for access control, forged requests, import edge cases, persistence failures, deletion, concurrency, and error leakage. Before any broader deployment, add stale-client revision checks for full-model replacement/import, and verify SQLite operation on the exact supported host/filesystem topology.
 6. Define least-privilege file permissions, secrets handling, dependency patching/scanning, logging that avoids sensitive content, and incident response.
 7. Define and test backup/restore, data deletion, schema migration, and recovery procedures.
 8. Review the real deployment configuration and obtain independent security approval. Passing unit tests or CI is not sufficient.
