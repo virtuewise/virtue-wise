@@ -48,7 +48,7 @@ def _prepare_database_file(path: Path) -> None:
         descriptor = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
     except FileExistsError:
         if path.is_symlink() or not path.is_file():
-            raise OSError("The VIRTUE WISE database path must be a regular file, not a symlink.")
+            raise OSError("The VIRTUE WISE database path must be a regular file, not a symlink.") from None
         os.chmod(path, 0o600)
     else:
         os.close(descriptor)
