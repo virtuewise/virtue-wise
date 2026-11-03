@@ -310,7 +310,9 @@ def add_statement(statement: Statement) -> ProjectModel:
 @app.put("/api/statements/{statement_id}", response_model=ProjectModel)
 def update_statement(statement_id: str, statement: Statement) -> ProjectModel:
     def mutate(model: ProjectModel) -> None:
-        index = next((i for i, item in enumerate(model.statements) if item.id == statement_id), None)
+        index = next(
+            (i for i, item in enumerate(model.statements) if item.id == statement_id), None
+        )
         if index is None:
             raise HTTPException(status_code=404, detail="Statement not found.")
         if statement.id != statement_id:
@@ -358,7 +360,9 @@ def add_hypothesis(hypothesis: Hypothesis) -> ProjectModel:
             raise HTTPException(status_code=409, detail="A hypothesis with this ID already exists.")
         known_ids = {statement.id for statement in model.statements}
         if set(hypothesis.evidence_statement_ids) - known_ids:
-            raise HTTPException(status_code=422, detail="Evidence must reference existing statements.")
+            raise HTTPException(
+                status_code=422, detail="Evidence must reference existing statements."
+            )
         if len(hypothesis.evidence_statement_ids) != len(set(hypothesis.evidence_statement_ids)):
             raise HTTPException(status_code=422, detail="Evidence links must be unique.")
         model.hypotheses.append(hypothesis)
