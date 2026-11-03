@@ -313,7 +313,6 @@ def test_custom_compatible_provider_requires_https_or_loopback(monkeypatch):
         analysis._compatible_config()
 
 
-
 def test_analysis_status_lists_provider_catalog_without_exposing_secrets(monkeypatch):
     catalog = [
         {
@@ -332,8 +331,6 @@ def test_analysis_status_lists_provider_catalog_without_exposing_secrets(monkeyp
     assert response.status_code == 200
     assert response.json()["providers"] == catalog
     assert "do-not-return-this" not in response.text
-
-
 
 
 def test_openrouter_analysis_uses_selected_free_model_and_bounded_json_output(monkeypatch):
