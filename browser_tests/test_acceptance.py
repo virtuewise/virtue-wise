@@ -28,6 +28,7 @@ def test_core_workflow_and_responsive_layout():
         page.keyboard.press("Tab")
         expect(page.get_by_role("link", name="Skip to workspace")).to_be_focused()
         page.keyboard.press("Enter")
+        expect(page.locator("#main-content")).to_be_focused()
         expect(page.locator("#main-content")).to_be_in_viewport()
         expect(page.get_by_role("navigation", name="Workspace sections")).to_be_visible()
         expect(page.get_by_role("navigation", name="Workspace sections").get_by_role(
