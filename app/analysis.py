@@ -1,5 +1,7 @@
 """Optional, loopback-only Ollama analysis with strict structured output validation."""
 
+# ruff: noqa: I001
+
 import json
 import os
 import re
