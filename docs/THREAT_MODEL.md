@@ -52,7 +52,7 @@ Security goals are confidentiality from other local users/processes where the op
 - Record-level model mutations acquire a SQLite `BEGIN IMMEDIATE` transaction before reading, then validate and commit or roll back the model atomically. Independent processes sharing the same local database file serialize through SQLite; lock acquisition is bounded at 10 seconds and returns HTTP 503 on exhaustion. Explicit full-model replacement/import require ETag/If-Match revision checks and reject stale writes.
 - A regression test exports, deletes, and restores a model through JSON import, checking project identity and representative linked content.
 - State-changing requests reject mismatched Origin/Referer and `Sec-Fetch-Site: cross-site`; Host headers are restricted to loopback names and the test host. Requests without Origin/Referer remain accepted for non-browser API clients.
-- The app is documented for loopback-only use and warns against sensitive data.
+- The app is documented for loopback-only use and warns against sensitive data.\n- The live SQLite file and newly created default data directory use restrictive POSIX permissions; backup snapshots and SQLite staging files are created with owner-only permissions, and newly created backup directories use mode `0700`. Existing custom directories and Windows ACLs remain operator responsibilities; this is not encryption.
 
 These controls reduce specific risks; they do not replace authentication, authorization, a session-bound CSRF token, secure deployment, or independent review. See [the authentication design](AUTHENTICATION_DESIGN.md) for the proposed networked model.
 
