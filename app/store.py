@@ -1,5 +1,6 @@
 """Small SQLite-backed store; no network service or telemetry is used."""
 
+import hashlib
 import os
 import sqlite3
 from collections.abc import Callable
@@ -54,11 +55,22 @@ def load_model() -> ProjectModel:
     return ProjectModel.model_validate_json(row[0])
 
 
+def _revision_for_payload(payload: str) -> str:
+    """Return a deterministic strong revision token for one stored payload."""
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def revision_for_model(model: ProjectModel) -> str:
+    """Return the strong revision token represented by a persisted model."""
+    return _revision_for_payload(model.model_dump_json())
+
+
 def load_model_with_revision() -> tuple[ProjectModel, str]:
     """Load the model and its compare-and-swap revision.
 
-    The sentinel revision is stable before the first save, unlike a newly
-    generated empty model timestamp.
+    The revision hashes the exact stored JSON payload rather than relying on
+    wall-clock timestamp resolution, so distinct writes cannot collide merely
+    because they occur within the same timestamp tick.
     """
     connection = _connect()
     try:
@@ -67,8 +79,9 @@ def load_model_with_revision() -> tuple[ProjectModel, str]:
         connection.close()
     if row is None:
         return ProjectModel(), "empty"
-    model = ProjectModel.model_validate_json(row[0])
-    return model, model.model_dump(mode="json")["updated_at"]
+    payload = row[0]
+    model = ProjectModel.model_validate_json(payload)
+    return model, _revision_for_payload(payload)
 
 
 def _write_model(connection: sqlite3.Connection, model: ProjectModel) -> None:
@@ -118,11 +131,7 @@ def save_model_if_current(model: ProjectModel, expected_revision: str) -> Projec
 
     def write():
         row = connection.execute("SELECT payload FROM project_model WHERE singleton = 1").fetchone()
-        current_revision = (
-            "empty"
-            if row is None
-            else ProjectModel.model_validate_json(row[0]).model_dump(mode="json")["updated_at"]
-        )
+        current_revision = "empty" if row is None else _revision_for_payload(row[0])
         if current_revision != expected_revision:
             raise StoreConflictError(
                 "The project changed since it was loaded. Reload before replacing it."
