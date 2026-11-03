@@ -122,7 +122,7 @@ def test_backup_health_check_rejects_a_corrupt_newest_snapshot(tmp_path, monkeyp
     backup.create_backup()
     corrupt = backups / "virtue-wise-99999999T999999999999Z.sqlite3"
     corrupt.write_bytes(b"not a SQLite database")
-    now = datetime.now(UTC)
+    now = datetime.now(UTC) + timedelta(seconds=2)
     modified = (now - timedelta(seconds=1)).timestamp()
     os.utime(corrupt, (modified, modified))
 
