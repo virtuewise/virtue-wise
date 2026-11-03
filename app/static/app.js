@@ -25,10 +25,9 @@ async function request(url, options = {}) {
   }
   if (response.status === 204) return null;
   const body = await response.json();
-  if (url === "/api/model" && (!options.method || options.method === "GET")) {
-    modelRevision = response.headers.get("ETag")?.replace(/^"|"$/g, "") || null;
-  } else if (body?.updated_at) {
-    modelRevision = body.updated_at;
+  const etag = response.headers.get("ETag");
+  if (etag) {
+    modelRevision = etag.replace(/^"|"$/g, "");
   }
   return body;
 }
@@ -438,7 +437,7 @@ byId("import-file").addEventListener("change", async (event) => {
       throw new Error(body.detail || `Import failed (${response.status})`);
     }
     model = await response.json();
-    modelRevision = model.updated_at;
+    modelRevision = response.headers.get("ETag")?.replace(/^"|"$/g, "") || null;
     render();
   }, "JSON model imported and validated.");
   event.target.value = "";
