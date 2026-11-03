@@ -349,7 +349,7 @@ def test_record_deletions_preserve_saved_model_when_persistence_fails(tmp_path, 
     def fail_save(_model):
         raise OSError("simulated storage failure")
 
-    monkeypatch.setattr(store, "save_model", fail_save)
+    monkeypatch.setattr(store, "mutate_model", fail_save)
     statement_delete = client.delete(f"/api/statements/{statement['id']}")
     scenario_delete = client.delete(f"/api/scenarios/{scenario['id']}")
 
