@@ -40,8 +40,13 @@ def _connect() -> sqlite3.Connection:
 
 def load_model() -> ProjectModel:
     """Load the saved model or return an empty model on first run."""
-    with _connect() as connection:
-        row = connection.execute("SELECT payload FROM project_model WHERE singleton = 1").fetchone()
+    connection = _connect()
+    try:
+        row = connection.execute(
+            "SELECT payload FROM project_model WHERE singleton = 1"
+        ).fetchone()
+    finally:
+        connection.close()
     if row is None:
         return ProjectModel()
     return ProjectModel.model_validate_json(row[0])
@@ -57,22 +62,13 @@ def _write_model(connection: sqlite3.Connection, model: ProjectModel) -> None:
     )
 
 
-def save_model(model: ProjectModel) -> ProjectModel:
-    """Atomically replace the saved model (used by explicit replace/import operations)."""
-    validated = ProjectModel.model_validate(model.model_dump(mode="python"))
-    connection = _connect()
+def _run_write_transaction(connection: sqlite3.Connection, operation):
+    """Run an operation in one bounded SQLite write transaction."""
     try:
         connection.execute("BEGIN IMMEDIATE")
-        _write_model(connection, validated)
+        result = operation()
         connection.commit()
-    except sqlite3.OperationalError as exc:
-        connection.rollback()
-        _raise_if_database_busy(exc)
-        raise
-    except sqlite3.OperationalError as exc:
-        connection.rollback()
-        _raise_if_database_busy(exc)
-        raise
+        return result
     except sqlite3.OperationalError as exc:
         connection.rollback()
         _raise_if_database_busy(exc)
@@ -82,7 +78,18 @@ def save_model(model: ProjectModel) -> ProjectModel:
         raise
     finally:
         connection.close()
-    return validated
+
+
+def save_model(model: ProjectModel) -> ProjectModel:
+    """Atomically replace the saved model (used by explicit replace/import operations)."""
+    validated = ProjectModel.model_validate(model.model_dump(mode="python"))
+    connection = _connect()
+
+    def write():
+        _write_model(connection, validated)
+        return validated
+
+    return _run_write_transaction(connection, write)
 
 
 def mutate_model(mutator: Callable[[ProjectModel], None]) -> ProjectModel:
@@ -93,31 +100,25 @@ def mutate_model(mutator: Callable[[ProjectModel], None]) -> ProjectModel:
     read-modify-write cycles instead of overwriting one another's updates.
     """
     connection = _connect()
-    try:
-        connection.execute("BEGIN IMMEDIATE")
-        row = connection.execute("SELECT payload FROM project_model WHERE singleton = 1").fetchone()
+
+    def update():
+        row = connection.execute(
+            "SELECT payload FROM project_model WHERE singleton = 1"
+        ).fetchone()
         model = ProjectModel() if row is None else ProjectModel.model_validate_json(row[0])
         mutator(model)
         validated = ProjectModel.model_validate(model.model_dump(mode="python"))
         _write_model(connection, validated)
-        connection.commit()
-    except Exception:
-        connection.rollback()
-        raise
-    finally:
-        connection.close()
-    return validated
+        return validated
+
+    return _run_write_transaction(connection, update)
 
 
 def delete_model() -> None:
     """Delete the local model transactionally while keeping the database ready for reuse."""
     connection = _connect()
-    try:
-        connection.execute("BEGIN IMMEDIATE")
+
+    def delete():
         connection.execute("DELETE FROM project_model WHERE singleton = 1")
-        connection.commit()
-    except Exception:
-        connection.rollback()
-        raise
-    finally:
-        connection.close()
+
+    _run_write_transaction(connection, delete)
