@@ -277,10 +277,15 @@ def save_validated_model_if_current(
         raise HTTPException(
             status_code=428, detail="If-Match is required. Reload the project first."
         )
-    revision = if_match.strip()
-    if revision.startswith('"') and revision.endswith('"'):
-        revision = revision[1:-1]
-    if not revision or "," in revision or revision == "*":
+    entity_tag = if_match.strip()
+    if not (entity_tag.startswith('"') and entity_tag.endswith('"')):
+        raise HTTPException(
+            status_code=400, detail="A single strong If-Match revision is required."
+        )
+    revision = entity_tag[1:-1]
+    if revision != "empty" and (
+        len(revision) != 64 or any(character not in "0123456789abcdef" for character in revision)
+    ):
         raise HTTPException(
             status_code=400, detail="A single strong If-Match revision is required."
         )
