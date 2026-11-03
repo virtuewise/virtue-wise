@@ -62,5 +62,5 @@ Until a replacement decision is accepted and its controls are implemented and in
 - [Release readiness](../RELEASE_READINESS.md)
 - [Import and resource limits](../IMPORT_SECURITY.md)
 - [Browser and manual acceptance](../ACCEPTANCE.md)
-- [AI provider acceptance](../AI_PROVIDER_ACCEPTANCE.md)
+- [Local AI provider configuration](../LOCAL_AI.md)
 - [Security deployment gate](https://github.com/virtuewise/virtue-wise/issues/7)
