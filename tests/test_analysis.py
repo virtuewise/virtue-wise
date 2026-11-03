@@ -89,7 +89,7 @@ def test_analysis_uses_structured_local_output_and_filters_unknown_evidence(monk
     )
     monkeypatch.setattr(analysis, "build_opener", lambda *_args: opener)
 
-    result = analysis.create_analysis_draft("Explore planning delays.", "qwen3:8b", project)
+    result = analysis.create_analysis_draft("Explore planning delays.", "ollama", "qwen3:8b", project)
 
     assert result.hypotheses[0].evidence_statement_ids == [statement.id]
     assert any("unrecognized evidence reference" in warning for warning in result.warnings)
@@ -111,7 +111,7 @@ def test_analysis_rejects_uninstalled_model(monkeypatch):
     monkeypatch.setattr(analysis, "build_opener", lambda *_args: opener)
 
     with pytest.raises(analysis.AnalysisUnavailable, match="not installed"):
-        analysis.create_analysis_draft("Explore this idea.", "qwen3:8b", ProjectModel())
+        analysis.create_analysis_draft("Explore this idea.", "ollama", "qwen3:8b", ProjectModel())
 
 
 def test_analysis_requires_explicit_local_processing_consent(tmp_path, monkeypatch):
@@ -131,12 +131,18 @@ def test_analysis_status_does_not_fail_when_local_model_is_absent(monkeypatch):
     def unavailable():
         raise analysis.AnalysisUnavailable("not running")
 
-    monkeypatch.setattr(analysis, "list_models", unavailable)
+    monkeypatch.setattr(
+        analysis,
+        "list_provider_catalog",
+        lambda: [
+            {"id": "ollama", "label": "Ollama", "available": False, "models": [], "note": ""}
+        ],
+    )
     response = TestClient(app).get("/api/analysis/status")
 
     assert response.status_code == 200
     assert response.json()["available"] is False
-    assert response.json()["models"] == []
+    assert response.json()["providers"][0]["id"] == "ollama"
 
 
 def test_analysis_endpoint_returns_review_only_draft(tmp_path, monkeypatch):
@@ -295,3 +301,25 @@ def test_custom_compatible_provider_requires_https_or_loopback(monkeypatch):
 
     with pytest.raises(analysis.AnalysisUnavailable, match="HTTPS"):
         analysis._compatible_config()
+
+
+
+def test_analysis_status_lists_provider_catalog_without_exposing_secrets(monkeypatch):
+    catalog = [
+        {
+            "id": "openrouter",
+            "label": "OpenRouter",
+            "available": True,
+            "models": [{"id": "free-model", "label": "Free model", "free": True}],
+            "note": "Free models only.",
+        }
+    ]
+    monkeypatch.setenv("OPENROUTER_API_KEY", "do-not-return-this")
+    monkeypatch.setattr(analysis, "list_provider_catalog", lambda: catalog)
+
+    response = TestClient(app).get("/api/analysis/status")
+
+    assert response.status_code == 200
+    assert response.json()["providers"] == catalog
+    assert "do-not-return-this" not in response.text
+
