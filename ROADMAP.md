@@ -34,9 +34,10 @@ This roadmap separates the **first local prototype** from the broader research v
 
 ## Phase 3 — Build the intelligence layer
 
-- [ ] Define a provider-neutral analysis contract and explicit opt-in/data-flow policy before any remote model integration
+- [x] Define a provider-neutral analysis contract and explicit opt-in/data-flow policy before any remote model integration
 - [ ] Implement source-aware extraction that distinguishes direct quotations, user assertions, imported facts, and model-generated candidates
-- [ ] Generate reviewable, evidence-linked hypotheses with counter-hypotheses, missing evidence, and explicit limitations
+- [ ] Generate fully source-aware, reviewable evidence-linked hypotheses with distinct counter-hypotheses, missing evidence, and explicit limitations
+- [x] Include model-suggested counterpoints, missing information, investigation questions, low-risk experiments, and alternative scenarios in review-only analysis drafts
 - [ ] Add user-approved research connectors with citations, retrieval timestamps, and source-quality checks
 - [ ] Add an investigation loop: formulate a question, identify discriminating evidence, propose a test, record results, and revise hypotheses
 - [ ] Evaluate false positives, missed relationships, usefulness, and calibration against a documented baseline
@@ -47,7 +48,7 @@ This roadmap separates the **first local prototype** from the broader research v
 - [x] Keep hypotheses user-created; do not require an external model
 - [ ] Define deterministic suggestion rules and evaluate usefulness and false connections
 - [ ] Publish evaluation examples, limitations, and known failure modes
-- [x] Add an optional, loopback-only Ollama adapter for structured draft analysis with explicit user consent
+- [x] Add optional free-first Ollama, OpenRouter, OpenCode, and OpenAI-compatible adapters with structured draft output and explicit user consent
 - [x] Validate model output, remove unknown evidence references, and keep generated hypotheses/scenarios in review-only state
 - [ ] Evaluate suggestion quality, false positives, missed relationships, and usefulness against a documented baseline
 - [ ] Add evidence-backed research connectors with source citations and retrieval timestamps
