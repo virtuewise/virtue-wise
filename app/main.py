@@ -62,7 +62,8 @@ class HypothesisUpdate(BaseModel):
 class AnalysisRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
     text: str = Field(min_length=1, max_length=2000)
-    model: str = Field(min_length=1, max_length=100)
+    provider: str = Field(default="ollama", min_length=1, max_length=40)
+    model: str = Field(min_length=1, max_length=200)
     consent: bool = False
 
 
@@ -410,40 +411,34 @@ def readiness() -> dict[str, str]:
 
 @app.get("/api/analysis/status")
 def analysis_status() -> dict:
-    """Check only the local Ollama model list; no project content is transmitted."""
-    try:
-        models = analysis.list_models()
-    except analysis.AnalysisError:
-        return {
-            "available": False,
-            "models": [],
-            "message": (
-                "Local Ollama was not detected. Start Ollama on this computer "
-                "to enable local analysis."
-            ),
-        }
-    return {"available": True, "models": models, "message": "Local Ollama is available."}
+    """List configured AI providers and their currently available models."""
+    providers = analysis.list_provider_catalog()
+    return {
+        "providers": providers,
+        "available": any(provider["available"] for provider in providers),
+        "message": "AI provider discovery completed. Select a model and review its data handling.",
+    }
 
 
 @app.post("/api/analysis/draft")
 def create_analysis_draft(request: AnalysisRequest) -> dict:
-    """Generate review-only suggestions using a user-confirmed local model."""
+    """Generate review-only suggestions using the explicitly selected provider."""
     if not request.consent:
         raise HTTPException(
             status_code=400,
             detail=(
-                "Confirm that this text and the current workspace may be processed "
-                "by your local Ollama model."
+                "Confirm that this prompt and saved workspace may be processed "
+                "by the selected AI provider."
             ),
         )
     acquired = _ANALYSIS_LOCK.acquire(timeout=1)
     if not acquired:
         raise HTTPException(
-            status_code=503, detail="A local analysis is already running. Retry shortly."
+            status_code=503, detail="An AI analysis is already running. Retry shortly."
         )
     try:
         model = store.load_model()
-        draft = analysis.create_analysis_draft(request.text, request.model, model)
+        draft = analysis.create_analysis_draft(request.text, request.provider, request.model, model)
         return draft.model_dump(mode="json")
     except (store.StoreBusyError, sqlite3.Error, ValidationError, ValueError) as exc:
         raise HTTPException(status_code=503, detail="Project storage is not ready.") from exc

@@ -16,7 +16,7 @@
         <img src="/static/mark.svg" alt="" width="34" height="34">
         <span>VIRTUE <strong>WISE</strong></span>
       </a>
-      <span class="local-badge"><span aria-hidden="true"></span> Private · stored on this computer</span>
+      <span class="local-badge"><span aria-hidden="true"></span> Workspace stored locally</span>
     </header>
     <main class="shell">
       <section class="intro">
@@ -36,32 +36,34 @@
           <label class="visually-hidden" for="intake-text">Describe what you want to explore</label>
           <textarea id="intake-text" maxlength="2000" rows="7" placeholder="I want to understand… / I have noticed… / I am trying to decide…"></textarea>
           <div class="intake-footer">
-            <span class="field-help">Up to 2,000 characters · Saved text is stored locally and is not sent to an AI provider.</span>
+            <span class="field-help">Up to 2,000 characters · Saved text is stored locally; it is sent to a selected AI provider only after you consent.</span>
             <button id="prepare-intake" class="button button-primary" type="submit">Build my starting workspace <span aria-hidden="true">→</span></button>
           </div>
         </form>
         <div class="local-ai-panel">
           <div class="local-ai-heading">
-            <div><p class="eyebrow">Optional intelligence layer</p><h3>Explore this with your local AI</h3></div>
-            <span class="local-only-tag">On this computer</span>
+            <div><p class="eyebrow">Optional intelligence layer</p><h3>Explore with an AI model</h3></div>
+            <span class="local-only-tag">Free-first · provider choice</span>
           </div>
-          <p class="section-copy">Connect to Ollama running on this computer to generate candidate hypotheses, counterpoints, missing information, experiments and alternative scenarios. VIRTUE WISE does not send your project to a cloud AI provider.</p>
+          <p class="section-copy">Choose Ollama on this computer, free hosted models from OpenRouter, or free models configured in your local OpenCode server. You can also configure another OpenAI-compatible endpoint. Hosted providers receive the prompt and selected saved workspace context after you consent.</p>
           <div class="local-ai-controls">
-            <button id="check-local-ai" class="button button-secondary" type="button">Check local AI</button>
+            <button id="check-local-ai" class="button button-secondary" type="button">Find available AI models</button>
             <span id="local-ai-status" class="field-help" role="status" aria-live="polite">Not checked yet.</span>
           </div>
-          <label for="local-ai-model">Installed local model</label>
-          <select id="local-ai-model" disabled><option value="">Check for installed models first</option></select>
+          <label for="ai-provider">AI provider</label>
+          <select id="ai-provider" disabled><option value="">Find available providers first</option></select>
+          <label for="ai-model">Model</label>
+          <select id="ai-model" disabled><option value="">Select a provider first</option></select>
           <label class="consent-label" for="local-ai-consent">
             <input id="local-ai-consent" type="checkbox">
-            I agree to process the text above and my saved project context using the Ollama model running on this computer.
+            I understand that the selected provider may receive the text above and my saved project context. I consent to this analysis.
           </label>
-          <button id="run-local-analysis" class="button button-primary" type="button" disabled>Analyze with local AI</button>
-          <p class="field-help">Analysis is optional and only starts when you explicitly click the button. Model output is unverified and must be reviewed. The app does not give the model web-search or external-action tools.</p>
+          <button id="run-local-analysis" class="button button-primary" type="button" disabled>Analyze with selected AI</button>
+          <p class="field-help">Analysis starts only after explicit consent and a click. Ollama stays on this computer; OpenRouter and hosted providers receive your content; OpenCode routes through the providers configured in your OpenCode server. Free tiers have limits. Model output is unverified and has no web-search or external-action tools.</p>
           <div id="analysis-results" class="analysis-results" hidden aria-live="polite"></div>
         </div>
         <div id="intake-preview" class="intake-preview" hidden aria-live="polite"></div>
-        <p class="privacy-note"><strong>Honest capability note:</strong> This first intake step organizes your own words and offers structured prompts. It does not yet perform AI research, verify claims, or autonomously discover unknown unknowns.</p>
+        <p class="privacy-note"><strong>Honest capability note:</strong> AI models can help draft candidate explanations, questions, experiments and scenarios. They do not perform web research, verify claims, establish novelty, or autonomously discover unknown unknowns.</p>
       </section>
 
       <section class="workspace-heading">
