@@ -47,7 +47,10 @@ This roadmap separates the **first local prototype** from the broader research v
 - [x] Keep hypotheses user-created; do not require an external model
 - [ ] Define deterministic suggestion rules and evaluate usefulness and false connections
 - [ ] Publish evaluation examples, limitations, and known failure modes
-- [ ] Consider optional model-assisted suggestions only after the core workflow has been evaluated
+- [x] Add an optional, loopback-only Ollama adapter for structured draft analysis with explicit user consent
+- [x] Validate model output, remove unknown evidence references, and keep generated hypotheses/scenarios in review-only state
+- [ ] Evaluate suggestion quality, false positives, missed relationships, and usefulness against a documented baseline
+- [ ] Add evidence-backed research connectors with source citations and retrieval timestamps
 
 ## Phase 4 — Explore scenarios
 
@@ -86,4 +89,4 @@ Early success is not measured only by stars. We will look for:
 
 ## Current completion boundary
 
-The runnable local prototype supports project editing, conversational-first manual intake, sourced statements, hypothesis review, qualitative scenario comparison, JSON import/export, local deletion, API tests, and CI. The intake is not an AI system: the intelligence, research, evidence extraction, and unknown-unknown discovery layers remain planned work. It is not a complete general-purpose world model, and it is not production-hardened: authentication, encryption at rest, CSRF protection, multi-user operation, migrations, and a completed manual accessibility review remain out of scope or unfinished. Do not deploy to an untrusted network.
+The runnable local prototype supports project editing, conversational-first intake, optional local Ollama draft analysis, sourced statements, hypothesis review, qualitative scenario comparison, JSON import/export, local deletion, API tests, and CI. The local model is an optional brainstorming assistant, not a research engine: source retrieval, independent verification, evaluated inference, and unknown-unknown discovery remain planned work. It is not a complete general-purpose world model, and it is not production-hardened: authentication, encryption at rest, CSRF protection, multi-user operation, migrations, and a completed manual accessibility review remain out of scope or unfinished. Do not deploy to an untrusted network.
