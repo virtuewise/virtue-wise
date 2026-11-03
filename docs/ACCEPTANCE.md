@@ -41,11 +41,16 @@ This section requires Ollama and at least one locally installed model. It is opt
 
 ## Accessibility and browser checks
 
+- [ ] On first Tab, confirm the skip link is visible and moves focus to the workspace.
+- [ ] Use the section navigation at desktop and mobile widths; confirm anchor targets are not hidden under the sticky header.
 - [ ] Complete the workflow using only the keyboard.
 - [ ] Verify focus is always visible and moves in a logical order.
 - [ ] Verify labels and status announcements with a screen reader.
 - [ ] Check at narrow mobile width and at 200% zoom.
 - [ ] Confirm long user-provided text wraps without horizontal page scrolling.
+- [ ] Open the same workspace in two tabs, save in one, then attempt a stale edit in the other; confirm no overwrite occurs and the one-click reload action restores the latest saved state.
+- [ ] Simulate provider rate limits and an unavailable provider; confirm errors remain distinct from local database contention and the saved workspace remains usable.
+- [ ] Complete the real-provider checklist in [AI_PROVIDER_ACCEPTANCE.md](AI_PROVIDER_ACCEPTANCE.md) separately for each configured provider.
 - [ ] Confirm native edit dialogs expose clear labels and validation errors, move focus appropriately, and cancel safely.
 
 ## Sign-off
