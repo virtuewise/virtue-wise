@@ -2,10 +2,13 @@
 
 import asyncio
 import json
+import os
+import stat
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+import pytest
 from fastapi import Request
 from fastapi.testclient import TestClient
 
@@ -800,3 +803,18 @@ def test_delete_responses_return_the_resulting_model_etag(tmp_path, monkeypatch)
     assert deleted_model.status_code == 204
     assert deleted_model.headers["etag"] == '"empty"'
     assert client.get("/api/model").headers["etag"] == '"empty"'
+
+
+@pytest.mark.skipif(os.name != "posix", reason="POSIX mode bits are not portable to Windows ACLs")
+def test_live_database_uses_private_permissions_and_repairs_existing_mode(tmp_path, monkeypatch):
+    database = tmp_path / "private-data" / "virtue-wise.sqlite3"
+    monkeypatch.setenv("VIRTUE_WISE_DB", str(database))
+
+    store.load_model()
+
+    assert stat.S_IMODE(database.parent.stat().st_mode) == 0o700
+    assert stat.S_IMODE(database.stat().st_mode) == 0o600
+
+    database.chmod(0o644)
+    store.load_model()
+    assert stat.S_IMODE(database.stat().st_mode) == 0o600

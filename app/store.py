@@ -31,9 +31,34 @@ def database_path() -> Path:
     return Path(os.environ.get("VIRTUE_WISE_DB", str(DEFAULT_DB_PATH)))
 
 
+def _prepare_database_file(path: Path) -> None:
+    """Create the database with private POSIX permissions and repair existing mode bits.
+
+    Newly created parent directories use mode 0700 and the database file uses
+    0600. Existing parent directories are not chmodded because callers may
+    intentionally place a custom database in a shared directory; operators
+    must ensure that directory and its backups are appropriately protected.
+    Windows access control remains governed by inherited filesystem ACLs.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    if os.name != "posix":
+        return
+
+    try:
+        descriptor = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+    except FileExistsError:
+        if path.is_symlink() or not path.is_file():
+            raise OSError(
+                "The VIRTUE WISE database path must be a regular file, not a symlink."
+            ) from None
+        os.chmod(path, 0o600)
+    else:
+        os.close(descriptor)
+
+
 def _connect() -> sqlite3.Connection:
     path = database_path()
-    path.parent.mkdir(parents=True, exist_ok=True)
+    _prepare_database_file(path)
     connection = sqlite3.connect(path, timeout=SQLITE_BUSY_TIMEOUT_SECONDS)
     connection.execute(f"PRAGMA busy_timeout = {SQLITE_BUSY_TIMEOUT_SECONDS * 1000}")
     connection.execute(

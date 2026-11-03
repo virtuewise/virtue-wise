@@ -42,7 +42,7 @@ uvicorn app.main:app --reload
 
 Open <http://127.0.0.1:8000>. API documentation is available at <http://127.0.0.1:8000/docs>.
 
-By default, SQLite data is stored at `data/virtue-wise.sqlite3`. Set `VIRTUE_WISE_DB` to use another path. The application has no authentication or encryption at rest: keep it bound to localhost and do not enter sensitive data.
+By default, SQLite data is stored at `data/virtue-wise.sqlite3`. Set `VIRTUE_WISE_DB` to use another path. On POSIX systems, newly created data directories use mode `0700` and the live database file uses `0600`; an existing custom parent directory is not changed, so ensure it is private. On Windows, protect the database with the host's filesystem ACLs. The application has no authentication or encryption at rest: keep it bound to localhost and do not enter sensitive data.
 
 ## Backups
 
