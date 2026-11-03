@@ -19,6 +19,13 @@ def test_core_workflow_and_responsive_layout():
         page.goto(BASE_URL, wait_until="networkidle")
         expect(page.locator("#notice")).to_contain_text("Ready.")
 
+        # Keyboard navigation starts at the brand link and exposes visible focus.
+        page.keyboard.press("Tab")
+        expect(page.locator(".brand")).to_be_focused()
+        assert page.locator(".brand").evaluate(
+            "(element) => getComputedStyle(element).outlineStyle !== 'none'"
+        )
+
         # Interactive controls must expose a usable accessible name.
         unnamed_buttons = page.locator("button").evaluate_all(
             "(items) => items.filter((item) => !(item.innerText.trim() || item.getAttribute('aria-label') || item.getAttribute('title'))).length"
@@ -131,6 +138,8 @@ def test_core_workflow_and_responsive_layout():
         expect(page.locator("body")).to_be_visible()
         assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
         page.set_viewport_size({"width": 640, "height": 900})
+        assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+        # A 640 CSS-pixel layout viewport approximates a 1280px desktop at 200% zoom.
         assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
 
         assert not page_errors, f"Browser JavaScript errors: {page_errors}"
