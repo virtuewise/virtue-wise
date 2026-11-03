@@ -2,11 +2,13 @@
 
 import os
 import sqlite3
+from collections.abc import Callable
 from pathlib import Path
 
 from app.models import ProjectModel, now_utc
 
 DEFAULT_DB_PATH = Path("data/virtue-wise.sqlite3")
+SQLITE_BUSY_TIMEOUT_SECONDS = 10
 
 
 def database_path() -> Path:
@@ -17,7 +19,8 @@ def database_path() -> Path:
 def _connect() -> sqlite3.Connection:
     path = database_path()
     path.parent.mkdir(parents=True, exist_ok=True)
-    connection = sqlite3.connect(path)
+    connection = sqlite3.connect(path, timeout=SQLITE_BUSY_TIMEOUT_SECONDS)
+    connection.execute(f"PRAGMA busy_timeout = {SQLITE_BUSY_TIMEOUT_SECONDS * 1000}")
     connection.execute(
         "CREATE TABLE IF NOT EXISTS project_model "
         "(singleton INTEGER PRIMARY KEY CHECK (singleton = 1), payload TEXT NOT NULL)"
@@ -34,20 +37,67 @@ def load_model() -> ProjectModel:
     return ProjectModel.model_validate_json(row[0])
 
 
-def save_model(model: ProjectModel) -> ProjectModel:
-    """Persist a validated model as a single atomic SQLite row."""
+def _write_model(connection: sqlite3.Connection, model: ProjectModel) -> None:
+    """Write one validated project model inside the caller's transaction."""
     model.updated_at = now_utc()
-    payload = model.model_dump_json()
-    with _connect() as connection:
-        connection.execute(
-            "INSERT INTO project_model(singleton, payload) VALUES (1, ?) "
-            "ON CONFLICT(singleton) DO UPDATE SET payload = excluded.payload",
-            (payload,),
-        )
-    return model
+    connection.execute(
+        "INSERT INTO project_model(singleton, payload) VALUES (1, ?) "
+        "ON CONFLICT(singleton) DO UPDATE SET payload = excluded.payload",
+        (model.model_dump_json(),),
+    )
+
+
+def save_model(model: ProjectModel) -> ProjectModel:
+    """Atomically replace the saved model (used by explicit replace/import operations)."""
+    validated = ProjectModel.model_validate(model.model_dump(mode="python"))
+    connection = _connect()
+    try:
+        connection.execute("BEGIN IMMEDIATE")
+        _write_model(connection, validated)
+        connection.commit()
+    except Exception:
+        connection.rollback()
+        raise
+    finally:
+        connection.close()
+    return validated
+
+
+def mutate_model(mutator: Callable[[ProjectModel], None]) -> ProjectModel:
+    """Read, validate, mutate, and write under a cross-process SQLite write lock.
+
+    BEGIN IMMEDIATE acquires SQLite's reserved write lock before reading the
+    current model. Independent workers/processes therefore serialize their
+    read-modify-write cycles instead of overwriting one another's updates.
+    """
+    connection = _connect()
+    try:
+        connection.execute("BEGIN IMMEDIATE")
+        row = connection.execute(
+            "SELECT payload FROM project_model WHERE singleton = 1"
+        ).fetchone()
+        model = ProjectModel() if row is None else ProjectModel.model_validate_json(row[0])
+        mutator(model)
+        validated = ProjectModel.model_validate(model.model_dump(mode="python"))
+        _write_model(connection, validated)
+        connection.commit()
+    except Exception:
+        connection.rollback()
+        raise
+    finally:
+        connection.close()
+    return validated
 
 
 def delete_model() -> None:
-    """Delete the local model while keeping the empty database ready for reuse."""
-    with _connect() as connection:
+    """Delete the local model transactionally while keeping the database ready for reuse."""
+    connection = _connect()
+    try:
+        connection.execute("BEGIN IMMEDIATE")
         connection.execute("DELETE FROM project_model WHERE singleton = 1")
+        connection.commit()
+    except Exception:
+        connection.rollback()
+        raise
+    finally:
+        connection.close()
