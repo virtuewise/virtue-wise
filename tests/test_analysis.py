@@ -153,19 +153,24 @@ def test_analysis_endpoint_returns_review_only_draft(tmp_path, monkeypatch):
     )
     calls = []
 
-    def create_draft(text, model_name, project):
-        calls.append((text, model_name, project.title))
+    def create_draft(text, provider, model_name, project):
+        calls.append((text, provider, model_name, project.title))
         return expected
 
     monkeypatch.setattr(analysis, "create_analysis_draft", create_draft)
     response = TestClient(app).post(
         "/api/analysis/draft",
-        json={"text": "Explore meeting delays.", "model": "qwen3:8b", "consent": True},
+        json={
+            "text": "Explore meeting delays.",
+            "provider": "ollama",
+            "model": "qwen3:8b",
+            "consent": True,
+        },
     )
 
     assert response.status_code == 200
     assert response.json()["hypotheses"][0]["claim"] == expected.hypotheses[0].claim
-    assert calls == [("Explore meeting delays.", "qwen3:8b", "Saved local project")]
+    assert calls == [("Explore meeting delays.", "ollama", "qwen3:8b", "Saved local project")]
 
 
 def test_analysis_request_body_is_bounded(tmp_path, monkeypatch):
@@ -177,3 +182,116 @@ def test_analysis_request_body_is_bounded(tmp_path, monkeypatch):
     )
 
     assert response.status_code == 413
+
+
+
+def test_openrouter_catalog_only_lists_zero_price_models(monkeypatch):
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
+    monkeypatch.setattr(analysis, "list_models", lambda: [])
+    monkeypatch.setattr(
+        analysis,
+        "_request_provider_json",
+        lambda *_args, **_kwargs: {
+            "data": [
+                {"id": "vendor/free-model:free", "name": "Free model",
+                 "pricing": {"prompt": "0", "completion": "0"}},
+                {"id": "vendor/paid-model", "name": "Paid model",
+                 "pricing": {"prompt": "0.000001", "completion": "0.000002"}},
+                {"id": "vendor/unknown-price", "pricing": {}},
+            ]
+        },
+    )
+
+    provider = next(item for item in analysis.list_provider_catalog() if item["id"] == "openrouter")
+
+    assert provider["available"] is True
+    assert {item["id"] for item in provider["models"]} == {
+        "vendor/free-model:free",
+        "openrouter/free",
+    }
+
+
+def test_opencode_catalog_only_lists_models_with_zero_input_and_output_cost(monkeypatch):
+    monkeypatch.setattr(analysis, "list_models", lambda: [])
+    monkeypatch.setattr(
+        analysis,
+        "_opencode_request",
+        lambda *_args, **_kwargs: {
+            "providers": [
+                {
+                    "id": "openrouter",
+                    "models": {
+                        "free-model": {
+                            "name": "Free model",
+                            "cost": {"input": 0, "output": 0},
+                        },
+                        "paid-model": {
+                            "name": "Paid model",
+                            "cost": {"input": 1, "output": 1},
+                        },
+                        "unknown-price": {"name": "Unknown price"},
+                    },
+                }
+            ]
+        },
+    )
+
+    provider = next(item for item in analysis.list_provider_catalog() if item["id"] == "opencode")
+
+    assert provider["available"] is True
+    assert [item["id"] for item in provider["models"]] == ["openrouter/free-model"]
+
+
+def test_opencode_analysis_disables_tools_and_deletes_temporary_session(monkeypatch):
+    generated = {
+        "summary": "A review-only result.",
+        "hypotheses": [],
+        "missing_information": [],
+        "questions": [],
+        "experiments": [],
+        "scenarios": [],
+    }
+    calls = []
+
+    def fake_request(path, payload=None, *, method=None):
+        calls.append((path, payload, method))
+        if path == "/config/providers":
+            return {
+                "providers": [
+                    {
+                        "id": "openrouter",
+                        "models": {
+                            "free-model": {
+                                "cost": {"input": 0, "output": 0},
+                            }
+                        },
+                    }
+                ]
+            }
+        if path == "/session":
+            return {"id": "session-123"}
+        if path.endswith("/message"):
+            return {
+                "parts": [{"type": "text", "text": json.dumps(generated)}],
+            }
+        return {}
+
+    monkeypatch.setattr(analysis, "_opencode_request", fake_request)
+    result = analysis.create_analysis_draft(
+        "opencode", "opencode", "openrouter/free-model", ProjectModel()
+    )
+
+    message_call = next(call for call in calls if call[0].endswith("/message"))
+    assert message_call[1]["tools"] == {}
+    assert result.summary == "A review-only result."
+    assert calls[-1][0] == "/session/session-123"
+    assert calls[-1][2] == "DELETE"
+
+
+def test_custom_compatible_provider_requires_https_or_loopback(monkeypatch):
+    monkeypatch.setenv("VIRTUE_WISE_COMPAT_BASE_URL", "http://example.com/v1")
+    monkeypatch.setenv("VIRTUE_WISE_COMPAT_API_KEY", "test-key")
+    monkeypatch.setenv("VIRTUE_WISE_COMPAT_MODELS", "model-a")
+
+    with pytest.raises(analysis.AnalysisUnavailable, match="HTTPS"):
+        analysis._compatible_config()
