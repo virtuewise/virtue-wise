@@ -338,9 +338,7 @@ def test_openrouter_analysis_uses_selected_free_model_and_bounded_json_output(mo
     monkeypatch.setattr(
         analysis,
         "_openrouter_free_models",
-        lambda _key: [
-            {"id": "vendor/model:free", "label": "Free model", "free": True}
-        ],
+        lambda _key: [{"id": "vendor/model:free", "label": "Free model", "free": True}],
     )
     calls = []
 
