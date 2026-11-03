@@ -15,7 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from app import store
+from app import analysis, store
 from app.models import Hypothesis, ProjectModel, Scenario, Statement, now_utc
 
 STATIC_DIR = Path(__file__).parent / "static"
@@ -27,6 +27,7 @@ MAX_CONCURRENT_IMPORTS = 2
 MUTATION_LOCK_TIMEOUT_SECONDS = 10
 _MUTATION_LOCK = threading.Lock()
 _IMPORT_LOCK = threading.BoundedSemaphore(MAX_CONCURRENT_IMPORTS)
+_ANALYSIS_LOCK = threading.BoundedSemaphore(1)
 
 
 def _unique_json_object(pairs):
@@ -56,6 +57,13 @@ class HypothesisUpdate(BaseModel):
     rationale: str = Field(default="", max_length=2000)
     evidence_statement_ids: list[str] = Field(default_factory=list, max_length=100)
     uncertainty: str = "unknown"
+
+
+class AnalysisRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    text: str = Field(min_length=1, max_length=2000)
+    model: str = Field(min_length=1, max_length=100)
+    consent: bool = False
 
 
 class ScenarioInput(BaseModel):
@@ -119,7 +127,10 @@ def _same_origin(source: str, request, *, is_referer: bool = False) -> bool:
 @app.middleware("http")
 async def serialize_mutations(request, call_next):
     """Serialize state-changing requests within this single application process."""
-    if request.method not in {"POST", "PUT", "PATCH", "DELETE"}:
+    if (
+        request.method not in {"POST", "PUT", "PATCH", "DELETE"}
+        or request.url.path == "/api/analysis/draft"
+    ):
         return await call_next(request)
 
     acquired = await asyncio.to_thread(_MUTATION_LOCK.acquire, True, MUTATION_LOCK_TIMEOUT_SECONDS)
@@ -201,6 +212,59 @@ async def limit_import_request_size(request: Request, call_next):
         return await call_next(request)
     finally:
         _IMPORT_LOCK.release()
+
+
+@app.middleware("http")
+async def limit_analysis_request_size(request: Request, call_next):
+    """Bound the small user-supplied body for optional local model analysis."""
+    if request.method != "POST" or request.url.path != "/api/analysis/draft":
+        return await call_next(request)
+
+    max_bytes = 16_384
+    declared = request.headers.get("content-length")
+    if declared is not None:
+        try:
+            size = int(declared)
+        except ValueError:
+            return JSONResponse(status_code=400, content={"detail": "Invalid request size."})
+        if size < 0:
+            return JSONResponse(status_code=400, content={"detail": "Invalid request size."})
+        if size > max_bytes:
+            return JSONResponse(
+                status_code=413, content={"detail": "Analysis request is too large."}
+            )
+
+    chunks: list[dict] = []
+    total = 0
+    try:
+        async with asyncio.timeout(10):
+            while True:
+                message = await request.receive()
+                if message["type"] == "http.disconnect":
+                    return Response(status_code=400)
+                total += len(message.get("body", b""))
+                if total > max_bytes:
+                    return JSONResponse(
+                        status_code=413, content={"detail": "Analysis request is too large."}
+                    )
+                chunks.append(message)
+                if not message.get("more_body", False):
+                    break
+    except TimeoutError:
+        return JSONResponse(status_code=408, content={"detail": "Analysis request timed out."})
+
+    index = 0
+
+    async def replay():
+        nonlocal index
+        if index < len(chunks):
+            message = chunks[index]
+            index += 1
+            return message
+        return {"type": "http.request", "body": b"", "more_body": False}
+
+    request._receive = replay
+    return await call_next(request)
 
 
 @app.middleware("http")
@@ -342,6 +406,55 @@ def readiness() -> dict[str, str]:
     except (sqlite3.Error, OSError, ValidationError, ValueError) as exc:
         raise HTTPException(status_code=503, detail="Project storage is not ready.") from exc
     return {"status": "ready", "storage": "ok"}
+
+
+@app.get("/api/analysis/status")
+def analysis_status() -> dict:
+    """Check only the local Ollama model list; no project content is transmitted."""
+    try:
+        models = analysis.list_models()
+    except analysis.AnalysisError:
+        return {
+            "available": False,
+            "models": [],
+            "message": (
+                "Local Ollama was not detected. Start Ollama on this computer "
+                "to enable local analysis."
+            ),
+        }
+    return {"available": True, "models": models, "message": "Local Ollama is available."}
+
+
+@app.post("/api/analysis/draft")
+def create_analysis_draft(request: AnalysisRequest) -> dict:
+    """Generate review-only suggestions using a user-confirmed local model."""
+    if not request.consent:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Confirm that this text and the current workspace may be processed "
+                "by your local Ollama model."
+            ),
+        )
+    acquired = _ANALYSIS_LOCK.acquire(timeout=1)
+    if not acquired:
+        raise HTTPException(
+            status_code=503, detail="A local analysis is already running. Retry shortly."
+        )
+    try:
+        model = store.load_model()
+        draft = analysis.create_analysis_draft(request.text, request.model, model)
+        return draft.model_dump(mode="json")
+    except (store.StoreBusyError, sqlite3.Error, ValidationError, ValueError) as exc:
+        raise HTTPException(status_code=503, detail="Project storage is not ready.") from exc
+    except analysis.AnalysisUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except analysis.AnalysisTimeout as exc:
+        raise HTTPException(status_code=504, detail=str(exc)) from exc
+    except analysis.AnalysisInvalidResponse as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    finally:
+        _ANALYSIS_LOCK.release()
 
 
 @app.get("/api/model", response_model=ProjectModel)

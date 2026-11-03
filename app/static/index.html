@@ -40,6 +40,26 @@
             <button id="prepare-intake" class="button button-primary" type="submit">Build my starting workspace <span aria-hidden="true">→</span></button>
           </div>
         </form>
+        <div class="local-ai-panel">
+          <div class="local-ai-heading">
+            <div><p class="eyebrow">Optional intelligence layer</p><h3>Explore this with your local AI</h3></div>
+            <span class="local-only-tag">On this computer</span>
+          </div>
+          <p class="section-copy">Connect to Ollama running on this computer to generate candidate hypotheses, counterpoints, missing information, experiments and alternative scenarios. VIRTUE WISE does not send your project to a cloud AI provider.</p>
+          <div class="local-ai-controls">
+            <button id="check-local-ai" class="button button-secondary" type="button">Check local AI</button>
+            <span id="local-ai-status" class="field-help" role="status" aria-live="polite">Not checked yet.</span>
+          </div>
+          <label for="local-ai-model">Installed local model</label>
+          <select id="local-ai-model" disabled><option value="">Check for installed models first</option></select>
+          <label class="consent-label" for="local-ai-consent">
+            <input id="local-ai-consent" type="checkbox">
+            I agree to process the text above and my saved project context using the Ollama model running on this computer.
+          </label>
+          <button id="run-local-analysis" class="button button-primary" type="button" disabled>Analyze with local AI</button>
+          <p class="field-help">Analysis is optional and only starts when you explicitly click the button. Model output is unverified and must be reviewed. The app does not give the model web-search or external-action tools.</p>
+          <div id="analysis-results" class="analysis-results" hidden aria-live="polite"></div>
+        </div>
         <div id="intake-preview" class="intake-preview" hidden aria-live="polite"></div>
         <p class="privacy-note"><strong>Honest capability note:</strong> This first intake step organizes your own words and offers structured prompts. It does not yet perform AI research, verify claims, or autonomously discover unknown unknowns.</p>
       </section>
