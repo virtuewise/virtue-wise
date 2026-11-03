@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import threading
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -634,7 +635,7 @@ def test_import_body_timeout_returns_408_without_replacing_model(tmp_path, monke
 def test_import_capacity_limit_returns_503(tmp_path, monkeypatch):
     client = test_client(tmp_path, monkeypatch)
     monkeypatch.setattr("app.main.IMPORT_SLOT_WAIT_SECONDS", 0.01)
-    monkeypatch.setattr("app.main._IMPORT_LOCK", __import__("threading").BoundedSemaphore(0))
+    monkeypatch.setattr("app.main._IMPORT_LOCK", threading.BoundedSemaphore(0))
     response = client.put(
         "/api/import",
         files={"upload": ("backup.json", b'{"schema_version": 1}', "application/json")},
