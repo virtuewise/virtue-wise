@@ -73,7 +73,8 @@ def test_core_workflow_and_responsive_layout():
         statement_id = page.locator("#hypothesis-evidence option").last.get_attribute("value")
         assert statement_id
 
-        page.locator("details").filter(has_text="Add a hypothesis manually").locator("summary").click()\n        page.get_by_label("Possible relationship or explanation").fill(
+        page.locator("details").filter(has_text="Add a hypothesis manually").locator("summary").click()
+        page.get_by_label("Possible relationship or explanation").fill(
             "Agenda scope may contribute to overruns."
         )
         page.get_by_label("Why might this be true?").fill(
@@ -100,7 +101,8 @@ def test_core_workflow_and_responsive_layout():
         )
 
         # Scenarios are displayed descriptively, without scores.
-        page.locator("details").filter(has_text="Add a scenario manually").locator("summary").click()\n        page.get_by_label("Scenario name").fill("Reduce agenda scope")
+        page.locator("details").filter(has_text="Add a scenario manually").locator("summary").click()
+        page.get_by_label("Scenario name").fill("Reduce agenda scope")
         page.get_by_label("Assumptions (one per line)").fill("The agenda can be shortened.\nOwners agree.")
         page.get_by_label("Expected outcome and trade-offs").fill(
             "Meetings may be shorter; some topics may move to follow-up."
