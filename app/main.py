@@ -261,9 +261,7 @@ def save_validated_model(model: ProjectModel) -> ProjectModel:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 
-def save_validated_model_if_current(
-    model: ProjectModel, if_match: str | None
-) -> ProjectModel:
+def save_validated_model_if_current(model: ProjectModel, if_match: str | None) -> ProjectModel:
     """Validate and atomically replace only the revision the caller observed."""
     if if_match is None:
         raise HTTPException(
