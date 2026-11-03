@@ -6,6 +6,7 @@ import re
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
+
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 
@@ -73,6 +74,10 @@ class AnalysisDraft(StrictModel):
     experiments: list[ExperimentSuggestion] = Field(default_factory=list, max_length=10)
     scenarios: list[ScenarioSuggestion] = Field(default_factory=list, max_length=5)
     warnings: list[str] = Field(default_factory=list, max_length=20)
+
+
+def _reject_json_constant(value):
+    raise ValueError(f"Invalid JSON numeric constant: {value}")
 
 
 def _unique_json_object(pairs):
@@ -223,6 +228,7 @@ def create_analysis_draft(user_text: str, model_name: str, project_model) -> Ana
         "existing_workspace": context,
     }
     schema = AnalysisDraft.model_json_schema()
+    schema["properties"].pop("warnings", None)
     response = _request_json(
         "/api/chat",
         {
@@ -252,7 +258,7 @@ def create_analysis_draft(user_text: str, model_name: str, project_model) -> Ana
         parsed_content = json.loads(
             content,
             object_pairs_hook=_unique_json_object,
-            parse_constant=lambda value: (_ for _ in ()).throw(ValueError(value)),
+            parse_constant=_reject_json_constant,
         )
         draft = AnalysisDraft.model_validate(parsed_content).model_copy(update={"warnings": []})
     except (ValidationError, ValueError, RecursionError) as exc:
