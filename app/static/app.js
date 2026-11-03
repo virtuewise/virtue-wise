@@ -420,13 +420,13 @@ let intakeDraft = null;
 
 function makeIntakeDraft(rawText) {
   const original = rawText.trim();
-  const blocks = original.split(/\\n\\s*\\n/).map((part) => part.trim()).filter(Boolean);
+  const blocks = original.split(/\n\s*\n/).map((part) => part.trim()).filter(Boolean);
   const statements = blocks.flatMap((block) => {
-    const lines = block.split(/\\n(?=\\s*(?:[-*•]|\\d+[.)])\\s+)/);
-    return lines.map((line) => line.replace(/^\\s*(?:[-*•]|\\d+[.)])\\s+/, "").trim()).filter(Boolean);
+    const lines = block.split(/\n(?=\s*(?:[-*•]|\d+[.)])\s+)/);
+    return lines.map((line) => line.replace(/^\s*(?:[-*•]|\d+[.)])\s+/, "").trim()).filter(Boolean);
   }).slice(0, 100);
-  const firstLine = original.split(/\\r?\\n/).find((line) => line.trim()) || original;
-  const title = firstLine.replace(/^\\s*(?:[-*•]|\\d+[.)])\\s+/, "").replace(/[.!?]$/, "").slice(0, 80);
+  const firstLine = original.split(/\r?\n/).find((line) => line.trim()) || original;
+  const title = firstLine.replace(/^\s*(?:[-*•]|\d+[.)])\s+/, "").replace(/[.!?]$/, "").slice(0, 80);
   return {
     title: title || "New exploration",
     goal: original,
