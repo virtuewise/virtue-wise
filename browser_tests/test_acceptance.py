@@ -186,8 +186,10 @@ def test_core_workflow_and_responsive_layout():
         ) if route.request.method == "PUT" else route.continue_())
         page.get_by_role("button", name="Save project details").click()
         expect(page.locator("#notice")).to_contain_text("changed elsewhere")
+        expect(page.get_by_role("button", name="Reload latest workspace")).to_be_visible()
         page.unroute_all()
-        page.reload(wait_until="networkidle")
+        page.get_by_role("button", name="Reload latest workspace").click()
+        expect(page.locator("#notice")).to_contain_text("Ready.")
 
         # Provider throttling is described in actionable, non-technical language.
         page.route("**/api/analysis/status", lambda route: route.fulfill(
