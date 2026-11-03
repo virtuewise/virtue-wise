@@ -58,7 +58,7 @@
             <input id="project-title" name="title" maxlength="200" required value="Untitled project">
             <label for="project-goal">Goal or question</label>
             <textarea id="project-goal" name="goal" rows="3" maxlength="2000" placeholder="What are you trying to understand or achieve?"></textarea>
-            <div><button type="submit" class="button button-primary">Save project details</button></div>
+            <div><button type="submit" class="button button-primary" aria-label="Save project details">Save project details</button></div>
           </form>
         </section>
       </details>
@@ -76,7 +76,7 @@
               <input id="source-label" maxlength="300" value="User provided" required>
               <label for="source-excerpt">Optional source excerpt</label>
               <textarea id="source-excerpt" maxlength="2000" rows="2" placeholder="A short excerpt or context (optional)"></textarea>
-              <button class="button button-secondary" type="submit">Add statement</button>
+              <button class="button button-secondary" type="submit" aria-label="Add statement">Add statement</button>
             </form>
           </details>
           <ul id="statement-list" class="item-list"></ul>
@@ -96,7 +96,7 @@
               <p id="evidence-help" class="field-help">Use Ctrl (Windows/Linux) or Command (Mac) to select multiple items.</p>
               <label for="hypothesis-uncertainty">Uncertainty</label>
               <select id="hypothesis-uncertainty"><option value="unknown">Unknown</option><option value="tentative">Tentative</option><option value="supported">Supported (reason documented)</option></select>
-              <button class="button button-secondary" type="submit">Add hypothesis</button>
+              <button class="button button-secondary" type="submit" aria-label="Add hypothesis">Add hypothesis</button>
             </form>
           </details>
           <ul id="hypothesis-list" class="item-list"></ul>
@@ -115,7 +115,7 @@
             <textarea id="scenario-assumptions" rows="3" placeholder="What needs to be true for this option to work?"></textarea>
             <label for="scenario-outcome">Expected outcome and trade-offs</label>
             <textarea id="scenario-outcome" maxlength="2000" rows="2" placeholder="What might happen, and what could be lost?"></textarea>
-            <div><button class="button button-secondary" type="submit">Add scenario</button></div>
+            <div><button class="button button-secondary" type="submit" aria-label="Add scenario">Add scenario</button></div>
           </form>
         </details>
         <div id="scenario-list" class="scenario-grid"></div>
