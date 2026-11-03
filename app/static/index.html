@@ -4,8 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#172b3a">
-    <meta name="description" content="A local-first workspace for inspectable project models.">
-    <title>VIRTUE WISE — Project model</title>
+    <meta name="description" content="A local-first workspace for evidence-aware thinking and exploration.">
+    <title>VIRTUE WISE — Think beyond the obvious</title>
     <link rel="icon" href="/static/mark.svg" type="image/svg+xml">
     <link rel="stylesheet" href="/static/styles.css">
     <script src="/static/app.js" defer></script>
@@ -16,78 +16,117 @@
         <img src="/static/mark.svg" alt="" width="34" height="34">
         <span>VIRTUE <strong>WISE</strong></span>
       </a>
-      <span class="local-badge"><span aria-hidden="true"></span> Local prototype</span>
+      <span class="local-badge"><span aria-hidden="true"></span> Private · stored on this computer</span>
     </header>
     <main class="shell">
       <section class="intro">
-        <p class="eyebrow">Make thinking inspectable</p>
-        <h1>Give your project a clearer model.</h1>
-        <p class="lede">Capture what you know, keep its source visible, and review possible relationships without confusing hypotheses with facts.</p>
+        <p class="eyebrow">A thinking partner for the questions that matter</p>
+        <h1>Start with what’s on your mind.</h1>
+        <p class="lede">You do not need to organize your thinking first. Describe an idea, challenge, opportunity or decision. VIRTUE WISE will help you turn that starting point into a workspace you can examine and develop.</p>
       </section>
-      <p id="notice" class="notice" role="status" aria-live="polite">Loading your local model…</p>
-      <section class="panel" aria-labelledby="project-heading">
-        <div class="section-heading"><div><p class="eyebrow">01 / Orientation</p><h2 id="project-heading">Your project</h2></div><span class="step-mark">01</span></div>
-        <form id="project-form" class="stack">
-          <label for="project-title">Project name</label>
-          <input id="project-title" name="title" maxlength="200" required value="Untitled project">
-          <label for="project-goal">Goal or question</label>
-          <textarea id="project-goal" name="goal" rows="3" maxlength="2000" placeholder="What are you trying to understand or achieve?"></textarea>
-          <div><button type="submit" class="button button-primary">Save project</button></div>
+      <p id="notice" class="notice" role="status" aria-live="polite">Loading your local workspace…</p>
+
+      <section class="panel intake-panel" aria-labelledby="intake-heading">
+        <div class="section-heading">
+          <div><p class="eyebrow">Your starting point</p><h2 id="intake-heading">What would you like to explore?</h2></div>
+          <span class="step-mark">01</span>
+        </div>
+        <p class="section-copy">Write naturally. Include the situation, what you already know, what you are unsure about, or what you hope to achieve. You can start with a few sentences.</p>
+        <form id="intake-form" class="stack">
+          <label class="visually-hidden" for="intake-text">Describe what you want to explore</label>
+          <textarea id="intake-text" maxlength="2000" rows="7" placeholder="I want to understand… / I have noticed… / I am trying to decide…"></textarea>
+          <div class="intake-footer">
+            <span class="field-help">Up to 2,000 characters · Your text stays in the local app database.</span>
+            <button id="prepare-intake" class="button button-primary" type="submit">Build my starting workspace <span aria-hidden="true">→</span></button>
+          </div>
         </form>
+        <div id="intake-preview" class="intake-preview" hidden aria-live="polite"></div>
+        <p class="privacy-note"><strong>Honest capability note:</strong> This first intake step organizes your own words and offers structured prompts. It does not yet perform AI research, verify claims, or autonomously discover unknown unknowns.</p>
       </section>
+
+      <section class="workspace-heading">
+        <div><p class="eyebrow">Your evolving model</p><h2>Explore and refine</h2></div>
+        <p class="section-copy">Your saved work appears here. Suggestions never become facts without your review.</p>
+      </section>
+
+      <details class="manual-entry">
+        <summary>Edit project details manually</summary>
+        <section class="panel" aria-labelledby="project-heading">
+          <div class="section-heading"><div><p class="eyebrow">Project settings</p><h2 id="project-heading">Your project</h2></div></div>
+          <form id="project-form" class="stack">
+            <label for="project-title">Project name</label>
+            <input id="project-title" name="title" maxlength="200" required value="Untitled project">
+            <label for="project-goal">Goal or question</label>
+            <textarea id="project-goal" name="goal" rows="3" maxlength="2000" placeholder="What are you trying to understand or achieve?"></textarea>
+            <div><button type="submit" class="button button-primary">Save project details</button></div>
+          </form>
+        </section>
+      </details>
+
       <div class="columns">
         <section class="panel" aria-labelledby="statements-heading">
-          <div class="section-heading"><div><p class="eyebrow">02 / Inputs</p><h2 id="statements-heading">Statements &amp; sources</h2></div><span class="count" id="statement-count">0</span></div>
-          <p class="section-copy">Record one fact, observation, or user-provided note at a time. These remain distinct from hypotheses.</p>
-          <form id="statement-form" class="stack">
-            <label for="statement-text">Statement</label>
-            <textarea id="statement-text" required maxlength="2000" rows="3" placeholder="What do you know or observe?"></textarea>
-            <label for="source-label">Source label</label>
-            <input id="source-label" maxlength="300" value="User provided" required>
-            <label for="source-excerpt">Optional source excerpt</label>
-            <textarea id="source-excerpt" maxlength="2000" rows="2" placeholder="A short excerpt or context (optional)"></textarea>
-            <button class="button button-secondary" type="submit">Add statement</button>
-          </form>
+          <div class="section-heading"><div><p class="eyebrow">02 / Inputs</p><h2 id="statements-heading">What you know</h2></div><span class="count" id="statement-count">0</span></div>
+          <p class="section-copy">Statements preserve what you supplied and where it came from. They are not automatically treated as verified facts.</p>
+          <details class="manual-entry compact">
+            <summary>Add a statement manually</summary>
+            <form id="statement-form" class="stack">
+              <label for="statement-text">Statement</label>
+              <textarea id="statement-text" required maxlength="2000" rows="3" placeholder="What do you know or observe?"></textarea>
+              <label for="source-label">Source label</label>
+              <input id="source-label" maxlength="300" value="User provided" required>
+              <label for="source-excerpt">Optional source excerpt</label>
+              <textarea id="source-excerpt" maxlength="2000" rows="2" placeholder="A short excerpt or context (optional)"></textarea>
+              <button class="button button-secondary" type="submit">Add statement</button>
+            </form>
+          </details>
           <ul id="statement-list" class="item-list"></ul>
         </section>
         <section class="panel" aria-labelledby="hypotheses-heading">
-          <div class="section-heading"><div><p class="eyebrow">03 / Interpretation</p><h2 id="hypotheses-heading">Hypotheses</h2></div><span class="count" id="hypothesis-count">0</span></div>
-          <p class="section-copy">A hypothesis is a proposition to review, not a verified fact. Link it to supporting statements where possible.</p>
-          <form id="hypothesis-form" class="stack">
-            <label for="hypothesis-claim">Possible relationship or explanation</label>
-            <textarea id="hypothesis-claim" required maxlength="2000" rows="3" placeholder="What might connect these observations?"></textarea>
-            <label for="hypothesis-rationale">Why might this be true?</label>
-            <textarea id="hypothesis-rationale" maxlength="2000" rows="2" placeholder="Reasoning and limitations"></textarea>
-            <label for="hypothesis-evidence">Evidence statements</label>
-            <select id="hypothesis-evidence" multiple size="3" aria-describedby="evidence-help"></select>
-            <p id="evidence-help" class="field-help">Use Ctrl (Windows/Linux) or Command (Mac) to select multiple items.</p>
-            <label for="hypothesis-uncertainty">Uncertainty</label>
-            <select id="hypothesis-uncertainty"><option value="unknown">Unknown</option><option value="tentative">Tentative</option><option value="supported">Supported (reason documented)</option></select>
-            <button class="button button-secondary" type="submit">Add hypothesis</button>
-          </form>
+          <div class="section-heading"><div><p class="eyebrow">03 / Interpretation</p><h2 id="hypotheses-heading">Possible explanations</h2></div><span class="count" id="hypothesis-count">0</span></div>
+          <p class="section-copy">Hypotheses are ideas to investigate, not established conclusions. Review their evidence and limitations.</p>
+          <details class="manual-entry compact">
+            <summary>Add a hypothesis manually</summary>
+            <form id="hypothesis-form" class="stack">
+              <label for="hypothesis-claim">Possible relationship or explanation</label>
+              <textarea id="hypothesis-claim" required maxlength="2000" rows="3" placeholder="What might connect these observations?"></textarea>
+              <label for="hypothesis-rationale">Why might this be true?</label>
+              <textarea id="hypothesis-rationale" maxlength="2000" rows="2" placeholder="Reasoning and limitations"></textarea>
+              <label for="hypothesis-evidence">Evidence statements</label>
+              <select id="hypothesis-evidence" multiple size="3" aria-describedby="evidence-help"></select>
+              <p id="evidence-help" class="field-help">Use Ctrl (Windows/Linux) or Command (Mac) to select multiple items.</p>
+              <label for="hypothesis-uncertainty">Uncertainty</label>
+              <select id="hypothesis-uncertainty"><option value="unknown">Unknown</option><option value="tentative">Tentative</option><option value="supported">Supported (reason documented)</option></select>
+              <button class="button button-secondary" type="submit">Add hypothesis</button>
+            </form>
+          </details>
           <ul id="hypothesis-list" class="item-list"></ul>
         </section>
       </div>
+
       <section class="panel" aria-labelledby="scenarios-heading">
-        <div class="section-heading"><div><p class="eyebrow">04 / Alternatives</p><h2 id="scenarios-heading">Compare scenarios</h2></div><span class="count" id="scenario-count">0</span></div>
-        <p class="section-copy">Describe alternatives and make assumptions explicit. This is a qualitative comparison, not a prediction or score.</p>
-        <form id="scenario-form" class="stack">
-          <label for="scenario-name">Scenario name</label>
-          <input id="scenario-name" maxlength="200" required placeholder="e.g. Reduce the project scope">
-          <label for="scenario-assumptions">Assumptions (one per line)</label>
-          <textarea id="scenario-assumptions" rows="3" placeholder="What needs to be true for this option to work?"></textarea>
-          <label for="scenario-outcome">Expected outcome and trade-offs</label>
-          <textarea id="scenario-outcome" maxlength="2000" rows="2" placeholder="What might happen, and what could be lost?"></textarea>
-          <div><button class="button button-secondary" type="submit">Add scenario</button></div>
-        </form>
+        <div class="section-heading"><div><p class="eyebrow">04 / Alternatives</p><h2 id="scenarios-heading">Possible paths forward</h2></div><span class="count" id="scenario-count">0</span></div>
+        <p class="section-copy">Compare alternatives, their assumptions and trade-offs. These are explorations, not predictions.</p>
+        <details class="manual-entry compact">
+          <summary>Add a scenario manually</summary>
+          <form id="scenario-form" class="stack">
+            <label for="scenario-name">Scenario name</label>
+            <input id="scenario-name" maxlength="200" required placeholder="e.g. Reduce the project scope">
+            <label for="scenario-assumptions">Assumptions (one per line)</label>
+            <textarea id="scenario-assumptions" rows="3" placeholder="What needs to be true for this option to work?"></textarea>
+            <label for="scenario-outcome">Expected outcome and trade-offs</label>
+            <textarea id="scenario-outcome" maxlength="2000" rows="2" placeholder="What might happen, and what could be lost?"></textarea>
+            <div><button class="button button-secondary" type="submit">Add scenario</button></div>
+          </form>
+        </details>
         <div id="scenario-list" class="scenario-grid"></div>
-        <p id="scenario-comparison-note" class="field-help">Add at least two scenarios to compare their assumptions and expected outcomes side by side.</p>
+        <p id="scenario-comparison-note" class="field-help">As your model develops, compare alternatives side by side.</p>
       </section>
+
       <section class="panel export-panel" aria-labelledby="data-heading">
-        <div><p class="eyebrow">04 / Ownership</p><h2 id="data-heading">Your data stays yours</h2><p class="section-copy">The prototype stores one model in a local SQLite database. Export a portable JSON copy or delete the saved model. Do not enter sensitive personal data.</p></div>
+        <div><p class="eyebrow">Your control</p><h2 id="data-heading">Your work stays yours</h2><p class="section-copy">Your current prototype stores one model in a local SQLite database. Export a portable JSON copy, import a previous model or delete local data. Do not enter sensitive personal data.</p></div>
         <div class="actions"><a class="button button-secondary" href="/api/export">Export JSON</a><label class="button button-secondary upload-label" for="import-file">Import JSON</label><input id="import-file" class="visually-hidden" type="file" accept="application/json,.json"><button id="delete-model" class="button button-danger" type="button">Delete local model</button></div>
       </section>
-      <footer><p>VIRTUE WISE is an experimental decision-support prototype, not a source of professional advice or reliable predictions.</p><a href="https://github.com/virtuewise/virtue-wise">Repository &amp; documentation</a></footer>
+      <footer><p>VIRTUE WISE is an experimental, human-directed thinking and decision-support project. Generated ideas require evidence and human review; it is not a source of professional advice or reliable predictions.</p><a href="https://github.com/virtuewise/virtue-wise">Repository &amp; development roadmap</a></footer>
     </main>
   </body>
 </html>
