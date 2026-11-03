@@ -417,7 +417,10 @@ def analysis_status() -> dict:
         return {
             "available": False,
             "models": [],
-            "message": "Local Ollama was not detected. Start Ollama on this computer to enable local analysis.",
+            "message": (
+                "Local Ollama was not detected. Start Ollama on this computer "
+                "to enable local analysis."
+            ),
         }
     return {"available": True, "models": models, "message": "Local Ollama is available."}
 
@@ -428,7 +431,10 @@ def create_analysis_draft(request: AnalysisRequest) -> dict:
     if not request.consent:
         raise HTTPException(
             status_code=400,
-            detail="Confirm that this text and the current workspace may be processed by your local Ollama model.",
+            detail=(
+                "Confirm that this text and the current workspace may be processed "
+                "by your local Ollama model."
+            ),
         )
     acquired = _ANALYSIS_LOCK.acquire(timeout=1)
     if not acquired:
