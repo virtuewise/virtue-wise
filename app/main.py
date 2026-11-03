@@ -249,19 +249,29 @@ async def sanitized_validation_error(request: Request, exc: RequestValidationErr
     return JSONResponse(status_code=422, content={"detail": errors})
 
 
-def save_validated_model(model: ProjectModel) -> ProjectModel:
+def _set_model_etag(response: Response, model: ProjectModel) -> None:
+    """Expose the exact persisted model revision to browser/API clients."""
+    response.headers["ETag"] = f'"{store.revision_for_model(model)}"'
+
+
+def save_validated_model(model: ProjectModel, response: Response | None = None) -> ProjectModel:
     """Revalidate mutable model state before persisting it."""
     try:
         validated = ProjectModel.model_validate(model.model_dump(mode="python"))
     except ValidationError as exc:
         raise HTTPException(status_code=422, detail="Model failed integrity validation.") from exc
     try:
-        return store.save_model(validated)
+        saved = store.save_model(validated)
+        if response is not None:
+            _set_model_etag(response, saved)
+        return saved
     except store.StoreBusyError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 
-def save_validated_model_if_current(model: ProjectModel, if_match: str | None) -> ProjectModel:
+def save_validated_model_if_current(
+    model: ProjectModel, if_match: str | None, response: Response | None = None
+) -> ProjectModel:
     """Validate and atomically replace only the revision the caller observed."""
     if if_match is None:
         raise HTTPException(
@@ -276,7 +286,10 @@ def save_validated_model_if_current(model: ProjectModel, if_match: str | None) -
         )
     try:
         validated = ProjectModel.model_validate(model.model_dump(mode="python"))
-        return store.save_model_if_current(validated, revision)
+        saved = store.save_model_if_current(validated, revision)
+        if response is not None:
+            _set_model_etag(response, saved)
+        return saved
     except ValidationError as exc:
         raise HTTPException(status_code=422, detail="Model failed integrity validation.") from exc
     except store.StoreConflictError as exc:
@@ -285,10 +298,13 @@ def save_validated_model_if_current(model: ProjectModel, if_match: str | None) -
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 
-def mutate_validated_model(mutator) -> ProjectModel:
+def mutate_validated_model(mutator, response: Response | None = None) -> ProjectModel:
     """Apply a model change inside a database-backed write transaction."""
     try:
-        return store.mutate_model(mutator)
+        saved = store.mutate_model(mutator)
+        if response is not None:
+            _set_model_etag(response, saved)
+        return saved
     except ValidationError as exc:
         raise HTTPException(status_code=422, detail="Model failed integrity validation.") from exc
     except store.StoreBusyError as exc:
@@ -317,14 +333,18 @@ def get_model(response: Response) -> ProjectModel:
 
 @app.put("/api/model", response_model=ProjectModel)
 def replace_model(
-    model: ProjectModel, if_match: str | None = Header(default=None, alias="If-Match")
+    model: ProjectModel,
+    response: Response,
+    if_match: str | None = Header(default=None, alias="If-Match"),
 ) -> ProjectModel:
-    return save_validated_model_if_current(model, if_match)
+    return save_validated_model_if_current(model, if_match, response)
 
 
 @app.put("/api/import", response_model=ProjectModel)
 async def import_model(
-    upload: UploadFile, if_match: str | None = Header(default=None, alias="If-Match")
+    upload: UploadFile,
+    response: Response,
+    if_match: str | None = Header(default=None, alias="If-Match"),
 ) -> ProjectModel:
     """Validate a versioned JSON upload before replacing the current local model."""
     if upload.content_type not in {"application/json", "text/json", "application/octet-stream"}:
@@ -351,21 +371,21 @@ async def import_model(
             status_code=422,
             detail="JSON does not match the supported VIRTUE WISE model schema.",
         ) from exc
-    return save_validated_model_if_current(model, if_match)
+    return save_validated_model_if_current(model, if_match, response)
 
 
 @app.post("/api/statements", response_model=ProjectModel, status_code=201)
-def add_statement(statement: Statement) -> ProjectModel:
+def add_statement(statement: Statement, response: Response) -> ProjectModel:
     def mutate(model: ProjectModel) -> None:
         if any(item.id == statement.id for item in model.statements):
             raise HTTPException(status_code=409, detail="A statement with this ID already exists.")
         model.statements.append(statement)
 
-    return mutate_validated_model(mutate)
+    return mutate_validated_model(mutate, response)
 
 
 @app.put("/api/statements/{statement_id}", response_model=ProjectModel)
-def update_statement(statement_id: str, statement: Statement) -> ProjectModel:
+def update_statement(statement_id: str, statement: Statement, response: Response) -> ProjectModel:
     def mutate(model: ProjectModel) -> None:
         index = next(
             (i for i, item in enumerate(model.statements) if item.id == statement_id), None
@@ -388,11 +408,11 @@ def update_statement(statement_id: str, statement: Statement) -> ProjectModel:
                     hypothesis.review_note = ""
                     hypothesis.reviewed_at = None
 
-    return mutate_validated_model(mutate)
+    return mutate_validated_model(mutate, response)
 
 
 @app.delete("/api/statements/{statement_id}", status_code=204)
-def delete_statement(statement_id: str) -> Response:
+def delete_statement(statement_id: str, response: Response) -> Response:
     def mutate(model: ProjectModel) -> None:
         if not any(item.id == statement_id for item in model.statements):
             raise HTTPException(status_code=404, detail="Statement not found.")
@@ -406,12 +426,12 @@ def delete_statement(statement_id: str) -> Response:
             )
         model.statements = [item for item in model.statements if item.id != statement_id]
 
-    mutate_validated_model(mutate)
+    mutate_validated_model(mutate, response)
     return Response(status_code=204)
 
 
 @app.post("/api/hypotheses", response_model=ProjectModel, status_code=201)
-def add_hypothesis(hypothesis: Hypothesis) -> ProjectModel:
+def add_hypothesis(hypothesis: Hypothesis, response: Response) -> ProjectModel:
     def mutate(model: ProjectModel) -> None:
         if any(item.id == hypothesis.id for item in model.hypotheses):
             raise HTTPException(status_code=409, detail="A hypothesis with this ID already exists.")
@@ -424,11 +444,11 @@ def add_hypothesis(hypothesis: Hypothesis) -> ProjectModel:
             raise HTTPException(status_code=422, detail="Evidence links must be unique.")
         model.hypotheses.append(hypothesis)
 
-    return mutate_validated_model(mutate)
+    return mutate_validated_model(mutate, response)
 
 
 @app.put("/api/hypotheses/{hypothesis_id}", response_model=ProjectModel)
-def update_hypothesis(hypothesis_id: str, update: HypothesisUpdate) -> ProjectModel:
+def update_hypothesis(hypothesis_id: str, update: HypothesisUpdate, response: Response) -> ProjectModel:
     def mutate(model: ProjectModel) -> None:
         hypothesis = next((item for item in model.hypotheses if item.id == hypothesis_id), None)
         if hypothesis is None:
@@ -459,11 +479,11 @@ def update_hypothesis(hypothesis_id: str, update: HypothesisUpdate) -> ProjectMo
             hypothesis.review_note = ""
             hypothesis.reviewed_at = None
 
-    return mutate_validated_model(mutate)
+    return mutate_validated_model(mutate, response)
 
 
 @app.patch("/api/hypotheses/{hypothesis_id}/review", response_model=ProjectModel)
-def review_hypothesis(hypothesis_id: str, request: ReviewRequest) -> ProjectModel:
+def review_hypothesis(hypothesis_id: str, request: ReviewRequest, response: Response) -> ProjectModel:
     allowed = {"accepted", "revised", "rejected"}
     if request.status not in allowed:
         raise HTTPException(
@@ -478,21 +498,21 @@ def review_hypothesis(hypothesis_id: str, request: ReviewRequest) -> ProjectMode
         hypothesis.review_note = request.note
         hypothesis.reviewed_at = now_utc()
 
-    return mutate_validated_model(mutate)
+    return mutate_validated_model(mutate, response)
 
 
 @app.post("/api/scenarios", response_model=ProjectModel, status_code=201)
-def add_scenario(scenario: Scenario) -> ProjectModel:
+def add_scenario(scenario: Scenario, response: Response) -> ProjectModel:
     def mutate(model: ProjectModel) -> None:
         if any(item.id == scenario.id for item in model.scenarios):
             raise HTTPException(status_code=409, detail="A scenario with this ID already exists.")
         model.scenarios.append(scenario)
 
-    return mutate_validated_model(mutate)
+    return mutate_validated_model(mutate, response)
 
 
 @app.put("/api/scenarios/{scenario_id}", response_model=ProjectModel)
-def update_scenario(scenario_id: str, update: ScenarioInput) -> ProjectModel:
+def update_scenario(scenario_id: str, update: ScenarioInput, response: Response) -> ProjectModel:
     def mutate(model: ProjectModel) -> None:
         scenario = next((item for item in model.scenarios if item.id == scenario_id), None)
         if scenario is None:
@@ -501,17 +521,17 @@ def update_scenario(scenario_id: str, update: ScenarioInput) -> ProjectModel:
         scenario.assumptions = update.assumptions
         scenario.expected_outcome = update.expected_outcome
 
-    return mutate_validated_model(mutate)
+    return mutate_validated_model(mutate, response)
 
 
 @app.delete("/api/scenarios/{scenario_id}", status_code=204)
-def delete_scenario(scenario_id: str) -> Response:
+def delete_scenario(scenario_id: str, response: Response) -> Response:
     def mutate(model: ProjectModel) -> None:
         if not any(item.id == scenario_id for item in model.scenarios):
             raise HTTPException(status_code=404, detail="Scenario not found.")
         model.scenarios = [item for item in model.scenarios if item.id != scenario_id]
 
-    mutate_validated_model(mutate)
+    mutate_validated_model(mutate, response)
     return Response(status_code=204)
 
 
