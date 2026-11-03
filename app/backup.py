@@ -43,15 +43,11 @@ def _verify_database(path: Path) -> None:
             raise ValueError(f"SQLite integrity check failed for {path}.")
         tables = {
             row[0]
-            for row in connection.execute(
-                "SELECT name FROM sqlite_master WHERE type = 'table'"
-            )
+            for row in connection.execute("SELECT name FROM sqlite_master WHERE type = 'table'")
         }
         if "project_model" not in tables:
             raise ValueError(f"Backup does not contain a project_model table: {path}")
-        row = connection.execute(
-            "SELECT payload FROM project_model WHERE singleton = 1"
-        ).fetchone()
+        row = connection.execute("SELECT payload FROM project_model WHERE singleton = 1").fetchone()
         if row is not None:
             ProjectModel.model_validate_json(row[0])
     except (sqlite3.DatabaseError, ValueError) as exc:
@@ -93,9 +89,7 @@ def prune_backups(
     return removed
 
 
-def create_backup(
-    keep: int | None = None, protect: tuple[Path, ...] = ()
-) -> Path:
+def create_backup(keep: int | None = None, protect: tuple[Path, ...] = ()) -> Path:
     """Create and verify an atomic SQLite snapshot, then prune older snapshots."""
     source_path = database_path()
     if not source_path.is_file():
