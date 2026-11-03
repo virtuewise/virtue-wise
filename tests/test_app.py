@@ -716,3 +716,28 @@ def test_import_rejects_stale_revision_without_replacing_model(tmp_path, monkeyp
     saved = client.get("/api/model").json()
     assert saved["title"] == "Untitled project"
     assert saved["statements"][0]["text"] == "A newer saved statement"
+
+
+
+def test_delete_responses_return_the_resulting_model_etag(tmp_path, monkeypatch):
+    client = test_client(tmp_path, monkeypatch)
+
+    statement = client.post("/api/statements", json={"text": "Delete me"}).json()[
+        "statements"
+    ][0]
+    deleted_statement = client.delete(f"/api/statements/{statement['id']}")
+    assert deleted_statement.status_code == 204
+    assert deleted_statement.headers["etag"] == client.get("/api/model").headers["etag"]
+
+    scenario = client.post("/api/scenarios", json={"name": "Delete this option"}).json()[
+        "scenarios"
+    ][0]
+    deleted_scenario = client.delete(f"/api/scenarios/{scenario['id']}")
+    assert deleted_scenario.status_code == 204
+    assert deleted_scenario.headers["etag"] == client.get("/api/model").headers["etag"]
+
+    client.post("/api/statements", json={"text": "Remove the complete model"})
+    deleted_model = client.delete("/api/model")
+    assert deleted_model.status_code == 204
+    assert deleted_model.headers["etag"] == '"empty"'
+    assert client.get("/api/model").headers["etag"] == '"empty"'
