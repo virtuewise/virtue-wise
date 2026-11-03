@@ -35,28 +35,32 @@ def _verify_database(path: Path) -> None:
     if not path.is_file():
         raise FileNotFoundError(f"Backup file does not exist: {path}")
     uri = path.resolve().as_uri() + "?mode=ro"
+    connection = None
     try:
-        with sqlite3.connect(uri, uri=True) as connection:
-            integrity = connection.execute("PRAGMA integrity_check").fetchone()
-            if integrity is None or integrity[0] != "ok":
-                raise ValueError(f"SQLite integrity check failed for {path}.")
-            tables = {
-                row[0]
-                for row in connection.execute(
-                    "SELECT name FROM sqlite_master WHERE type = 'table'"
-                )
-            }
-            if "project_model" not in tables:
-                raise ValueError(f"Backup does not contain a project_model table: {path}")
-            row = connection.execute(
-                "SELECT payload FROM project_model WHERE singleton = 1"
-            ).fetchone()
-            if row is not None:
-                ProjectModel.model_validate_json(row[0])
+        connection = sqlite3.connect(uri, uri=True)
+        integrity = connection.execute("PRAGMA integrity_check").fetchone()
+        if integrity is None or integrity[0] != "ok":
+            raise ValueError(f"SQLite integrity check failed for {path}.")
+        tables = {
+            row[0]
+            for row in connection.execute(
+                "SELECT name FROM sqlite_master WHERE type = 'table'"
+            )
+        }
+        if "project_model" not in tables:
+            raise ValueError(f"Backup does not contain a project_model table: {path}")
+        row = connection.execute(
+            "SELECT payload FROM project_model WHERE singleton = 1"
+        ).fetchone()
+        if row is not None:
+            ProjectModel.model_validate_json(row[0])
     except (sqlite3.DatabaseError, ValueError) as exc:
         if isinstance(exc, ValueError):
             raise
         raise ValueError(f"Backup is not a readable VIRTUE WISE database: {path}") from exc
+    finally:
+        if connection is not None:
+            connection.close()
 
 
 def verify_backup(path: str | Path) -> Path:
@@ -66,7 +70,9 @@ def verify_backup(path: str | Path) -> Path:
     return resolved
 
 
-def prune_backups(keep: int = DEFAULT_RETENTION_COUNT) -> list[Path]:
+def prune_backups(
+    keep: int = DEFAULT_RETENTION_COUNT, protect: tuple[Path, ...] = ()
+) -> list[Path]:
     """Keep the newest configured number of managed backup snapshots."""
     if keep < 1:
         raise ValueError("Backup retention count must be at least 1.")
@@ -78,13 +84,18 @@ def prune_backups(keep: int = DEFAULT_RETENTION_COUNT) -> list[Path]:
         key=lambda item: (item.stat().st_mtime_ns, item.name),
         reverse=True,
     )
-    removed = snapshots[keep:]
+    protected = {path.resolve() for path in protect}
+    preserved = [path for path in snapshots if path.resolve() in protected]
+    candidates = [path for path in snapshots if path.resolve() not in protected]
+    removed = candidates[max(0, keep - len(preserved)) :]
     for path in removed:
         path.unlink()
     return removed
 
 
-def create_backup(keep: int | None = None) -> Path:
+def create_backup(
+    keep: int | None = None, protect: tuple[Path, ...] = ()
+) -> Path:
     """Create and verify an atomic SQLite snapshot, then prune older snapshots."""
     source_path = database_path()
     if not source_path.is_file():
@@ -101,25 +112,27 @@ def create_backup(keep: int | None = None) -> Path:
     destination = directory / f"{BACKUP_PREFIX}{stamp}.sqlite3"
     temporary = directory / f".{destination.name}.{uuid4().hex}.tmp"
 
-    source = sqlite3.connect(source_path, timeout=10)
-    target = sqlite3.connect(temporary)
     try:
-        source.backup(target)
-        target.commit()
-    finally:
-        target.close()
-        source.close()
+        source = sqlite3.connect(source_path, timeout=10)
+        try:
+            target = sqlite3.connect(temporary)
+            try:
+                source.backup(target)
+                target.commit()
+            finally:
+                target.close()
+        finally:
+            source.close()
 
-    try:
         os.chmod(temporary, 0o600)
         _verify_database(temporary)
         os.replace(temporary, destination)
         os.chmod(destination, 0o600)
-        prune_backups(count)
+        prune_backups(count, protect=protect)
+        return destination
     finally:
         if temporary.exists():
             temporary.unlink()
-    return destination
 
 
 def restore_backup(path: str | Path) -> tuple[Path, Path | None]:
@@ -134,18 +147,20 @@ def restore_backup(path: str | Path) -> tuple[Path, Path | None]:
         raise ValueError("The live database cannot be used as its own restore source.")
 
     target_path.parent.mkdir(parents=True, exist_ok=True)
-    pre_restore = create_backup() if target_path.is_file() else None
+    pre_restore = create_backup(protect=(source_path,)) if target_path.is_file() else None
     temporary = target_path.with_name(f".{target_path.name}.{uuid4().hex}.restore")
-    source = sqlite3.connect(f"{source_path.as_uri()}?mode=ro", uri=True)
-    target = sqlite3.connect(temporary)
     try:
-        source.backup(target)
-        target.commit()
-    finally:
-        target.close()
-        source.close()
+        source = sqlite3.connect(f"{source_path.as_uri()}?mode=ro", uri=True)
+        try:
+            target = sqlite3.connect(temporary)
+            try:
+                source.backup(target)
+                target.commit()
+            finally:
+                target.close()
+        finally:
+            source.close()
 
-    try:
         os.chmod(temporary, 0o600)
         _verify_database(temporary)
         os.replace(temporary, target_path)
