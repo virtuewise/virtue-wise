@@ -385,7 +385,9 @@ def update_hypothesis(hypothesis_id: str, update: HypothesisUpdate) -> ProjectMo
             raise HTTPException(status_code=422, detail="Unknown uncertainty label.")
         known_ids = {statement.id for statement in model.statements}
         if set(update.evidence_statement_ids) - known_ids:
-            raise HTTPException(status_code=422, detail="Evidence must reference existing statements.")
+            raise HTTPException(
+                status_code=422, detail="Evidence must reference existing statements."
+            )
         if len(update.evidence_statement_ids) != len(set(update.evidence_statement_ids)):
             raise HTTPException(status_code=422, detail="Evidence links must be unique.")
         changed = any(
