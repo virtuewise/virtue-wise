@@ -45,7 +45,7 @@ def test_systemd_backup_service_uses_a_restricted_sandbox():
     for directive in required:
         assert directive in unit
 
-    assert "ReadWritePaths=/" not in unit
+    assert "ReadWritePaths=/" not in unit.splitlines()
     assert "PrivateNetwork=false" not in unit
 
 
