@@ -120,9 +120,10 @@ def _request_json(path: str, payload: dict | None = None, *, timeout: int) -> di
     request = Request(
         url,
         data=data,
-        headers={"Accept": "application/json", **(
-            {"Content-Type": "application/json"} if data is not None else {}
-        )},
+        headers={
+            "Accept": "application/json",
+            **({"Content-Type": "application/json"} if data is not None else {}),
+        },
         method="GET" if data is None else "POST",
     )
     opener = build_opener(_NoRedirect())
@@ -130,10 +131,14 @@ def _request_json(path: str, payload: dict | None = None, *, timeout: int) -> di
         with opener.open(request, timeout=timeout) as response:
             raw = response.read(MAX_RESPONSE_BYTES + 1)
     except TimeoutError as exc:
-        raise AnalysisTimeout("The local model took too long. Try a smaller model or retry.") from exc
+        raise AnalysisTimeout(
+            "The local model took too long. Try a smaller model or retry."
+        ) from exc
     except HTTPError as exc:
         if exc.code in {301, 302, 303, 307, 308}:
-            raise AnalysisUnavailable("The local model service attempted an unsafe redirect.") from exc
+            raise AnalysisUnavailable(
+                "The local model service attempted an unsafe redirect."
+            ) from exc
         raise AnalysisUnavailable("The local model service returned an error.") from exc
     except (URLError, OSError) as exc:
         raise AnalysisUnavailable(
