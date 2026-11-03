@@ -212,6 +212,55 @@ async def limit_import_request_size(request: Request, call_next):
 
 
 @app.middleware("http")
+async def limit_analysis_request_size(request: Request, call_next):
+    """Bound the small user-supplied body for optional local model analysis."""
+    if request.method != "POST" or request.url.path != "/api/analysis/draft":
+        return await call_next(request)
+
+    max_bytes = 16_384
+    declared = request.headers.get("content-length")
+    if declared is not None:
+        try:
+            size = int(declared)
+        except ValueError:
+            return JSONResponse(status_code=400, content={"detail": "Invalid request size."})
+        if size < 0:
+            return JSONResponse(status_code=400, content={"detail": "Invalid request size."})
+        if size > max_bytes:
+            return JSONResponse(status_code=413, content={"detail": "Analysis request is too large."})
+
+    chunks: list[dict] = []
+    total = 0
+    try:
+        async with asyncio.timeout(10):
+            while True:
+                message = await request.receive()
+                if message["type"] == "http.disconnect":
+                    return Response(status_code=400)
+                total += len(message.get("body", b""))
+                if total > max_bytes:
+                    return JSONResponse(status_code=413, content={"detail": "Analysis request is too large."})
+                chunks.append(message)
+                if not message.get("more_body", False):
+                    break
+    except TimeoutError:
+        return JSONResponse(status_code=408, content={"detail": "Analysis request timed out."})
+
+    index = 0
+
+    async def replay():
+        nonlocal index
+        if index < len(chunks):
+            message = chunks[index]
+            index += 1
+            return message
+        return {"type": "http.request", "body": b"", "more_body": False}
+
+    request._receive = replay
+    return await call_next(request)
+
+
+@app.middleware("http")
 async def enforce_request_origin(request, call_next):
     """Reject cross-origin browser signals on state-changing requests."""
     if request.method not in {"GET", "HEAD", "OPTIONS"}:
