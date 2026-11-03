@@ -3,7 +3,7 @@
   const nativeFetch = window.fetch.bind(window);
   window.fetch = async (input, init = {}) => {
     const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), 90000);
+    const timeout = window.setTimeout(() => controller.abort(), 100000);
     try {
       const response = await nativeFetch(input, { ...init, signal: init.signal || controller.signal });
       if (response.ok || response.status === 204) return response;
