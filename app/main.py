@@ -153,9 +153,7 @@ async def limit_import_request_size(request: Request, call_next):
                 content={"detail": "Import request must be 2.1 MB or smaller."},
             )
 
-    acquired = await asyncio.to_thread(
-        _IMPORT_LOCK.acquire, True, IMPORT_SLOT_WAIT_SECONDS
-    )
+    acquired = await asyncio.to_thread(_IMPORT_LOCK.acquire, True, IMPORT_SLOT_WAIT_SECONDS)
     if not acquired:
         return JSONResponse(
             status_code=503,
