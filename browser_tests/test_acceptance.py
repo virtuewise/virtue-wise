@@ -213,7 +213,8 @@ def test_provider_smoke_test_sends_only_fictional_sample():
                 content_type="application/json",
                 body=(
                     '{"providers":[{"id":"ollama","label":"Ollama","available":true,'
-                    '"models":[{"id":"qwen3:8b","label":"qwen3:8b","free":true}],'
+                    '"models":[{"id":"qwen3:8b","label":"qwen3:8b","free":true},'
+                    '{"id":"qwen3:4b","label":"qwen3:4b","free":true}],'
                     '"note":"Local model"}],"available":true,"message":"ready"}'
                 ),
             ),
@@ -225,8 +226,20 @@ def test_provider_smoke_test_sends_only_fictional_sample():
             "button", name="Test provider with fictional sample"
         )
         expect(test_button).to_be_disabled()
-        expect(page.get_by_role("button", name="Analyze with selected AI")).to_be_disabled()
+        analyze_button = page.get_by_role("button", name="Analyze with selected AI")
+        expect(analyze_button).to_be_disabled()
 
+        # Consent belongs to the selected provider/model and must be renewed
+        # after the model changes.
+        page.locator("#local-ai-consent").check()
+        page.locator("#ai-self-test-consent").check()
+        expect(test_button).to_be_enabled()
+        page.get_by_label("Model").select_option("qwen3:4b")
+        expect(page.locator("#local-ai-consent")).not_to_be_checked()
+        expect(page.locator("#ai-self-test-consent")).not_to_be_checked()
+        expect(analyze_button).to_be_disabled()
+        expect(test_button).to_be_disabled()
+        page.get_by_label("Model").select_option("qwen3:8b")
         page.locator("#ai-self-test-consent").check()
 
         def capture_self_test(route):
