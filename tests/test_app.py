@@ -666,7 +666,13 @@ def test_import_rejects_stale_revision_without_replacing_model(tmp_path, monkeyp
 
     imported = client.put(
         "/api/import",
-        files={"upload": ("stale.json", b'{"schema_version": 1, "title": "Stale import"}', "application/json")},
+        files={
+            "upload": (
+                "stale.json",
+                b'{"schema_version": 1, "title": "Stale import"}',
+                "application/json",
+            )
+        },
         headers={"If-Match": stale_revision},
     )
     assert imported.status_code == 412
