@@ -202,6 +202,20 @@ def test_provider_self_test_requires_explicit_consent(monkeypatch):
     assert called == []
 
 
+def test_provider_self_test_rejects_user_supplied_content_fields():
+    response = TestClient(app).post(
+        "/api/analysis/self-test",
+        json={
+            "provider": "ollama",
+            "model": "qwen3:8b",
+            "consent": True,
+            "text": "This private text must not be accepted by the smoke-test endpoint.",
+        },
+    )
+
+    assert response.status_code == 422
+
+
 def test_provider_self_test_uses_only_fictional_context(monkeypatch):
     expected = analysis.AnalysisDraft(
         summary="The sample provider returned a valid structured response.",
