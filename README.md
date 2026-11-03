@@ -98,6 +98,8 @@ Contributions are welcome across engineering, research, product design, accessib
 | [Vision](docs/VISION.md) | Motivation and foundational ideas |
 | [Prototype plan](docs/PROTOTYPE.md) | Scope, technical choices, acceptance criteria |
 | [Architecture](docs/ARCHITECTURE.md) | Implementation, boundaries, and known limitations |
+| [Deployment architecture decision](docs/decisions/0001-local-first-deployment.md) | First-release single-user loopback boundary and conditions for reopening it |
+| [Independent security review brief](docs/SECURITY_REVIEW_BRIEF.md) | Scope, evidence index, limitations, and reviewer sign-off template |
 | [Acceptance walkthrough](docs/ACCEPTANCE.md) | Manual workflow and accessibility checklist |
 | [Model evaluation protocol](docs/MODEL_EVALUATION.md) | Evidence-based criteria for deciding whether to expand the data model |
 | [Brand guide](docs/BRAND.md) | Visual identity and documentation standards |
