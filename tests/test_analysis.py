@@ -302,7 +302,8 @@ def test_opencode_analysis_disables_tools_and_deletes_temporary_session(monkeypa
     assert result.summary == "A review-only result."
     assert calls[-1][0] == "/session/session-123"
     assert calls[-1][2] == "DELETE"
-    assert next(call for call in calls if call[0].endswith("/message"))[3] == analysis.ANALYSIS_TIMEOUT_SECONDS
+    message_call = next(call for call in calls if call[0].endswith("/message"))
+    assert message_call[3] == analysis.ANALYSIS_TIMEOUT_SECONDS
 
 
 def test_custom_compatible_provider_requires_https_or_loopback(monkeypatch):
