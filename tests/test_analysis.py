@@ -387,7 +387,6 @@ def test_openrouter_analysis_uses_selected_free_model_and_bounded_json_output(mo
     assert method is None
 
 
-
 @pytest.mark.parametrize(
     ("status", "message"),
     [
@@ -435,9 +434,7 @@ def test_opencode_temporary_session_is_deleted_when_analysis_fails(monkeypatch):
                 "providers": [
                     {
                         "id": "openrouter",
-                        "models": {
-                            "free-model": {"cost": {"input": 0, "output": 0}}
-                        },
+                        "models": {"free-model": {"cost": {"input": 0, "output": 0}}},
                     }
                 ]
             }
