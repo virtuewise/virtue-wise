@@ -193,3 +193,63 @@ def test_core_workflow_and_responsive_layout():
 
         assert not page_errors, f"Browser JavaScript errors: {page_errors}"
         browser.close()
+
+
+def test_provider_smoke_test_sends_only_fictional_sample():
+    sent_payloads = []
+    page_errors = []
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch()
+        page = browser.new_page(viewport={"width": 1280, "height": 900})
+        page.on("pageerror", lambda error: page_errors.append(str(error)))
+        page.goto(BASE_URL, wait_until="networkidle")
+        page.locator("#intake-text").fill(
+            "PRIVATE WORKSPACE TEXT MUST NOT BE SENT BY THE PROVIDER TEST."
+        )
+        page.route(
+            "**/api/analysis/status",
+            lambda route: route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=(
+                    '{"providers":[{"id":"ollama","label":"Ollama","available":true,'
+                    '"models":[{"id":"qwen3:8b","label":"qwen3:8b","free":true}],'
+                    '"note":"Local model"}],"available":true,"message":"ready"}'
+                ),
+            ),
+        )
+        page.get_by_role("button", name="Find available AI models").click()
+        page.get_by_label("AI provider").select_option("ollama")
+        page.get_by_label("Model").select_option("qwen3:8b")
+        test_button = page.get_by_role(
+            "button", name="Test provider with fictional sample"
+        )
+        expect(test_button).to_be_disabled()
+        expect(page.get_by_role("button", name="Analyze with selected AI")).to_be_disabled()
+
+        page.locator("#ai-self-test-consent").check()
+
+        def capture_self_test(route):
+            sent_payloads.append(route.request.post_data_json)
+            route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=(
+                    '{"ok":true,"provider":"ollama","model":"qwen3:8b",'
+                    '"summary":"Fictional sample processed.","hypothesis_count":1}'
+                ),
+            )
+
+        page.route("**/api/analysis/self-test", capture_self_test)
+        expect(test_button).to_be_enabled()
+        test_button.click()
+        expect(page.locator("#local-ai-status")).to_contain_text(
+            "no saved workspace data was sent"
+        )
+        expect(page.get_by_role("button", name="Analyze with selected AI")).to_be_disabled()
+        assert sent_payloads == [
+            {"provider": "ollama", "model": "qwen3:8b", "consent": True}
+        ]
+        assert "PRIVATE WORKSPACE TEXT" not in str(sent_payloads)
+        assert not page_errors, f"Browser JavaScript errors: {page_errors}"
+        browser.close()
