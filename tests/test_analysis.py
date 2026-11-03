@@ -95,6 +95,7 @@ def test_analysis_uses_structured_local_output_and_filters_unknown_evidence(monk
     chat_request = json.loads(opener.requests[1][0].data)
     assert chat_request["stream"] is False
     assert chat_request["format"]["type"] == "object"
+    assert "warnings" not in chat_request["format"]["properties"]
     assert "untrusted data" in chat_request["messages"][0]["content"]
     assert statement.id in chat_request["messages"][1]["content"]
     assert all(
