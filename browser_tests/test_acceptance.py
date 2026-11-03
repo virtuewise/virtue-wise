@@ -225,3 +225,39 @@ def test_core_workflow_and_responsive_layout():
 
         assert not page_errors, f"Browser JavaScript errors: {page_errors}"
         browser.close()
+
+
+
+def test_two_browser_tabs_preserve_latest_revision_and_recover():
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch()
+        context = browser.new_context(viewport={"width": 1280, "height": 900})
+        first = context.new_page()
+        second = context.new_page()
+        first.goto(BASE_URL, wait_until="networkidle")
+        second.goto(BASE_URL, wait_until="networkidle")
+        expect(first.locator("#notice")).to_contain_text("Ready.")
+        expect(second.locator("#notice")).to_contain_text("Ready.")
+
+        first.locator("details").filter(has_text="Edit project details manually").locator(
+            "summary"
+        ).click()
+        second.locator("details").filter(has_text="Edit project details manually").locator(
+            "summary"
+        ).click()
+        first.get_by_label("Project name").fill("Saved from first tab")
+        first.get_by_role("button", name="Save project details").click()
+        expect(first.locator("#notice")).to_contain_text("Saved locally.")
+
+        second.get_by_label("Project name").fill("Stale edit from second tab")
+        second.get_by_role("button", name="Save project details").click()
+        expect(second.locator("#notice")).to_contain_text("changed elsewhere")
+        expect(second.get_by_role("button", name="Reload latest workspace")).to_be_visible()
+        second.get_by_role("button", name="Reload latest workspace").click()
+        expect(second.locator("#notice")).to_contain_text("Ready.")
+        second.locator("details").filter(has_text="Edit project details manually").locator(
+            "summary"
+        ).click()
+        expect(second.get_by_label("Project name")).to_have_value("Saved from first tab")
+
+        browser.close()
