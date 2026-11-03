@@ -679,6 +679,7 @@ def test_full_model_replacement_requires_current_revision(tmp_path, monkeypatch)
     current_revision = current.headers["etag"].strip('"')
     assert len(current_revision) == 64
     assert all(character in "0123456789abcdef" for character in current_revision)
+    assert saved.headers["etag"] == current.headers["etag"]
     assert current.headers["etag"] != initial.headers["etag"]
 
     stale = client.put(
