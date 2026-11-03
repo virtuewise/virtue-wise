@@ -4,12 +4,11 @@ import asyncio
 import json
 import os
 import stat
-
-import pytest
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+import pytest
 from fastapi import Request
 from fastapi.testclient import TestClient
 
@@ -804,7 +803,6 @@ def test_delete_responses_return_the_resulting_model_etag(tmp_path, monkeypatch)
     assert deleted_model.status_code == 204
     assert deleted_model.headers["etag"] == '"empty"'
     assert client.get("/api/model").headers["etag"] == '"empty"'
-
 
 
 @pytest.mark.skipif(os.name != "posix", reason="POSIX mode bits are not portable to Windows ACLs")
