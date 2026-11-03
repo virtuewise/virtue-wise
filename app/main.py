@@ -439,6 +439,8 @@ def create_analysis_draft(request: AnalysisRequest) -> dict:
         model = store.load_model()
         draft = analysis.create_analysis_draft(request.text, request.model, model)
         return draft.model_dump(mode="json")
+    except (store.StoreBusyError, sqlite3.Error, ValidationError, ValueError) as exc:
+        raise HTTPException(status_code=503, detail="Project storage is not ready.") from exc
     except analysis.AnalysisUnavailable as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except analysis.AnalysisTimeout as exc:
