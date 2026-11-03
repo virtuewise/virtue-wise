@@ -20,8 +20,12 @@ from app.models import Hypothesis, ProjectModel, Scenario, Statement, now_utc
 STATIC_DIR = Path(__file__).parent / "static"
 MAX_IMPORT_BYTES = 2_000_000
 MAX_IMPORT_REQUEST_BYTES = 2_100_000
+IMPORT_BODY_TIMEOUT_SECONDS = 30
+IMPORT_SLOT_WAIT_SECONDS = 1
+MAX_CONCURRENT_IMPORTS = 2
 MUTATION_LOCK_TIMEOUT_SECONDS = 10
 _MUTATION_LOCK = threading.Lock()
+_IMPORT_LOCK = threading.BoundedSemaphore(MAX_CONCURRENT_IMPORTS)
 
 
 def _unique_json_object(pairs):
@@ -131,7 +135,7 @@ async def serialize_mutations(request, call_next):
 
 @app.middleware("http")
 async def limit_import_request_size(request: Request, call_next):
-    """Bound chunked and declared import bodies before multipart parsing."""
+    """Bound import bytes, upload duration, and in-process concurrent imports."""
     if request.method != "PUT" or request.url.path != "/api/import":
         return await call_next(request)
 
@@ -149,36 +153,55 @@ async def limit_import_request_size(request: Request, call_next):
                 content={"detail": "Import request must be 2.1 MB or smaller."},
             )
 
-    chunks: list[dict] = []
-    total = 0
-    while True:
-        message = await request.receive()
-        if message["type"] == "http.disconnect":
-            return Response(status_code=400)
-        chunk = message.get("body", b"")
-        total += len(chunk)
-        if total > MAX_IMPORT_REQUEST_BYTES:
+    acquired = await asyncio.to_thread(
+        _IMPORT_LOCK.acquire, True, IMPORT_SLOT_WAIT_SECONDS
+    )
+    if not acquired:
+        return JSONResponse(
+            status_code=503,
+            content={"detail": "Import capacity is busy. Retry the request."},
+            headers={"Retry-After": "1"},
+        )
+
+    try:
+        chunks: list[dict] = []
+        total = 0
+        try:
+            async with asyncio.timeout(IMPORT_BODY_TIMEOUT_SECONDS):
+                while True:
+                    message = await request.receive()
+                    if message["type"] == "http.disconnect":
+                        return Response(status_code=400)
+                    chunk = message.get("body", b"")
+                    total += len(chunk)
+                    if total > MAX_IMPORT_REQUEST_BYTES:
+                        return JSONResponse(
+                            status_code=413,
+                            content={"detail": "Import request must be 2.1 MB or smaller."},
+                        )
+                    chunks.append(message)
+                    if not message.get("more_body", False):
+                        break
+        except TimeoutError:
             return JSONResponse(
-                status_code=413,
-                content={"detail": "Import request must be 2.1 MB or smaller."},
+                status_code=408,
+                content={"detail": "Import upload timed out. Retry the request."},
             )
-        chunks.append(message)
-        if not message.get("more_body", False):
-            break
 
-    index = 0
+        index = 0
 
-    async def replay():
-        nonlocal index
-        if index < len(chunks):
-            message = chunks[index]
-            index += 1
-            return message
-        return {"type": "http.request", "body": b"", "more_body": False}
+        async def replay():
+            nonlocal index
+            if index < len(chunks):
+                message = chunks[index]
+                index += 1
+                return message
+            return {"type": "http.request", "body": b"", "more_body": False}
 
-    request._receive = replay
-    return await call_next(request)
-
+        request._receive = replay
+        return await call_next(request)
+    finally:
+        _IMPORT_LOCK.release()
 
 @app.middleware("http")
 async def enforce_request_origin(request, call_next):
