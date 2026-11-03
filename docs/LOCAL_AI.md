@@ -9,14 +9,18 @@ This integration is **off until the user checks for a local model, selects an in
 1. Install Ollama for Windows from the [official Ollama website](https://ollama.com/download).
 2. Start Ollama and keep its local service running.
 3. In PowerShell, confirm the command is available:
+
    ```powershell
    ollama --version
    ```
+
 4. Download a model of your choice using Ollama. For example:
+
    ```powershell
    ollama pull <model-name>
    ollama list
    ```
+
 5. Start VIRTUE WISE on its normal loopback address, open <http://127.0.0.1:8000>, and select **Check local AI**.
 6. Select one of the models listed by Ollama, review the local-processing disclosure, tick the consent box, and click **Analyze with local AI**.
 
