@@ -25,7 +25,7 @@ def _create_private_sqlite_file(path: Path) -> None:
 
 def _sync_file(path: Path) -> None:
     """Flush a completed staging file before it is atomically published."""
-    descriptor = os.open(path, os.O_RDONLY)
+    descriptor = os.open(path, os.O_RDWR)
     try:
         os.fsync(descriptor)
     finally:
