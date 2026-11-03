@@ -79,7 +79,6 @@ This threat model does not claim resistance to a compromised operating system, m
 - [ ] Track each required control to an implementation, test, or explicit risk acceptance in issue #7.
 - [ ] Revisit this model whenever authentication, integrations, network deployment, multi-user support, or sensitive data handling is introduced.
 
-
 ## Future multi-user authorization policy (decision recorded)
 
 The selected product policy is **private by default, with explicit, revocable sharing**. This does not change the current supported deployment or security boundary described above: the application still has no authenticated identity, project ownership, sharing grants, or multi-user authorization.
