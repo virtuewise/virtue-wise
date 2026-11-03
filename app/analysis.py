@@ -675,19 +675,23 @@ def _create_opencode_draft(model_id: str, user_text: str, project_model) -> Anal
             },
         )
         parts = response.get("parts")
-        content = "\n".join(
-            part.get("text", "")
-            for part in parts
-            if isinstance(part, dict) and part.get("type") == "text" and isinstance(part.get("text"), str)
-        ) if isinstance(parts, list) else ""
+        content = (
+            "\n".join(
+                part.get("text", "")
+                for part in parts
+                if isinstance(part, dict)
+                and part.get("type") == "text"
+                and isinstance(part.get("text"), str)
+            )
+            if isinstance(parts, list)
+            else ""
+        )
         if not content:
             raise AnalysisInvalidResponse("OpenCode returned no text analysis.")
         return _validated_draft(content, project_model)
     finally:
         try:
-            _opencode_request(
-                f"/session/{quote(session_id, safe='')}", method="DELETE"
-            )
+            _opencode_request(f"/session/{quote(session_id, safe='')}", method="DELETE")
         except AnalysisError:
             pass
 
@@ -702,11 +706,17 @@ def create_analysis_draft(
         key = _openrouter_key()
         if not key:
             raise AnalysisUnavailable("Set OPENROUTER_API_KEY to enable OpenRouter free models.")
-        available = {item["id"] for item in list_provider_catalog()
-                     if item["id"] == "openrouter" for item in item["models"]}
+        available = {
+            model["id"]
+            for provider_entry in list_provider_catalog()
+            if provider_entry["id"] == "openrouter"
+            for model in provider_entry["models"]
+        }
         if model_name not in available:
             raise AnalysisUnavailable("That OpenRouter model is not currently listed as free.")
-        return _chat_completion("https://openrouter.ai/api/v1", key, model_name, user_text, project_model)
+        return _chat_completion(
+            "https://openrouter.ai/api/v1", key, model_name, user_text, project_model
+        )
     if provider == "opencode":
         return _create_opencode_draft(model_name, user_text, project_model)
     if provider == "compatible":
