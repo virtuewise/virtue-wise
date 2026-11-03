@@ -88,6 +88,31 @@ sudo journalctl -u virtue-wise-backup.service
 
 Do not assume scheduling is active until the timer is enabled and a successful backup is visible. The app itself does not install or manage system services.
 
+## Schedule backups on Windows Task Scheduler
+
+For a Windows-first local installation, use Windows Task Scheduler under the same Windows account that owns the project data. The application does not install tasks automatically.
+
+1. Confirm the project has been run at least once and the database exists at `<repository>\data\virtue-wise.sqlite3`. Create the backup directory if desired. The default is `<repository>\data\backups`.
+2. Open **Task Scheduler** and choose **Create Task** (not Basic Task).
+3. On **General**, name it `VIRTUE WISE Daily Backup`, select the Windows account used for local development, and choose **Run only when user is logged on**. Do not select elevated privileges unless the chosen data paths genuinely require them.
+4. On **Triggers**, create a daily trigger at a suitable time (for example, 02:15).
+5. On **Actions**, choose **Start a program**:
+   - Program/script: `<repository>\.venv\Scripts\python.exe`
+   - Add arguments: `-m app.backup create`
+   - Start in: `<repository>` (the directory containing `app\` and `pyproject.toml`)
+6. On **Settings**, enable **Run task as soon as possible after a scheduled start is missed**, and set **If the task is already running** to **Do not start a new instance**. Consider a reasonable execution time limit, such as 30 minutes.
+7. Save the task, right-click it, choose **Run**, and confirm a new verified snapshot appears in the configured backup directory. Inspect **Last Run Result** and **History** after the first run.
+
+The task inherits the selected Windows account's filesystem permissions. Ensure the database, JSON exports, and backup directory ACLs grant access only to the intended account and administrators. Avoid shared/network drives and do not run the task as a broadly privileged service account. If custom paths are required, set `VIRTUE_WISE_DB`, `VIRTUE_WISE_BACKUP_DIR`, and `VIRTUE_WISE_BACKUP_RETENTION_COUNT` consistently for the scheduled task's account before relying on it; verify the effective paths by inspecting the resulting snapshot location.
+
+To check the latest recovery point, create a second Task Scheduler task named `VIRTUE WISE Backup Health Check` with a daily trigger later than the backup (for example, 03:00), the same account and **Start in** directory, and this action:
+
+- Program/script: `<repository>\.venv\Scripts\python.exe`
+- Add arguments: `-m app.backup check --max-age-hours 26`
+- Start in: `<repository>`
+
+Review its **Last Run Result** and **History**. A non-zero result indicates that the newest managed backup is missing, stale, future-dated, or corrupt. Task Scheduler history is not a notification service; configure a separate alert if unattended failure notification is required. The health check verifies only the newest local snapshot and does not replace a restore drill or protected off-device copy.
+
 ## Verify and restore
 
 Verify a snapshot before relying on it:

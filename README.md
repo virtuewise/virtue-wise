@@ -47,7 +47,7 @@ By default, SQLite data is stored at `data/virtue-wise.sqlite3`. Set `VIRTUE_WIS
 
 ## Backups
 
-Create and verify a local SQLite snapshot with `python -m app.backup create`; see [backup operations](docs/BACKUP_OPERATIONS.md) for retention, the sample daily systemd timer, verification, restore, and explicit local snapshot purge (`python -m app.backup purge --yes`). Newly created POSIX backup directories use mode `0700` and staging/snapshot files use `0600`; protect existing custom directories with host permissions. The timer must be installed separately; backup files are not encrypted by the app.
+Create and verify a local SQLite snapshot with `python -m app.backup create`; see [backup operations](docs/BACKUP_OPERATIONS.md) for retention, Windows Task Scheduler and sample Linux systemd scheduling, freshness checks, verification, restore, and explicit local snapshot purge (`python -m app.backup purge --yes`). Newly created POSIX backup directories use mode `0700` and staging/snapshot files use `0600`; protect existing custom directories with host permissions. The timer must be installed separately; backup files are not encrypted by the app.
 
 Run quality checks:
 
