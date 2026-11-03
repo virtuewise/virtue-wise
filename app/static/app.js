@@ -416,6 +416,123 @@ byId("scenario-form").addEventListener("submit", (event) => {
   });
 });
 
+let intakeDraft = null;
+
+function makeIntakeDraft(rawText) {
+  const original = rawText.trim();
+  const blocks = original.split(/\\n\\s*\\n/).map((part) => part.trim()).filter(Boolean);
+  const statements = blocks.flatMap((block) => {
+    const lines = block.split(/\\n(?=\\s*(?:[-*•]|\\d+[.)])\\s+)/);
+    return lines.map((line) => line.replace(/^\\s*(?:[-*•]|\\d+[.)])\\s+/, "").trim()).filter(Boolean);
+  }).slice(0, 100);
+  const firstLine = original.split(/\\r?\\n/).find((line) => line.trim()) || original;
+  const title = firstLine.replace(/^\\s*(?:[-*•]|\\d+[.)])\\s+/, "").replace(/[.!?]$/, "").slice(0, 80);
+  return {
+    title: title || "New exploration",
+    goal: original,
+    statements: statements.length ? statements : [original],
+    questions: [
+      "What would you most like to understand, decide or change?",
+      "Which parts of this description are directly observed, and which are assumptions?",
+      "What evidence or source would help verify the important claims?",
+      "What information might be missing, and who or what could provide it?",
+      "What result would cause you to revise your current view?"
+    ]
+  };
+}
+
+function showIntakeDraft(draft) {
+  const preview = byId("intake-preview");
+  preview.replaceChildren();
+  const heading = document.createElement("h3");
+  heading.textContent = "Your starting workspace";
+  const intro = document.createElement("p");
+  intro.className = "section-copy";
+  intro.textContent = "We have organized your own input below. Nothing here has been independently verified or generated through AI research.";
+  const titleLabel = document.createElement("span");
+  titleLabel.className = "draft-label";
+  titleLabel.textContent = "Suggested project title";
+  const title = document.createElement("p");
+  title.className = "draft-title";
+  title.textContent = draft.title;
+  const goalLabel = document.createElement("span");
+  goalLabel.className = "draft-label";
+  goalLabel.textContent = "Your goal / original description";
+  const goal = document.createElement("p");
+  goal.className = "draft-goal";
+  goal.textContent = draft.goal;
+  const statementLabel = document.createElement("h4");
+  statementLabel.textContent = `Input statements to preserve (${draft.statements.length})`;
+  const statementList = document.createElement("ul");
+  statementList.className = "draft-list";
+  draft.statements.forEach((statement) => {
+    const item = document.createElement("li");
+    item.textContent = statement;
+    statementList.append(item);
+  });
+  const questionsLabel = document.createElement("h4");
+  questionsLabel.textContent = "Questions to guide your next thinking";
+  const questions = document.createElement("ul");
+  questions.className = "draft-list question-list";
+  draft.questions.forEach((question) => {
+    const item = document.createElement("li");
+    item.textContent = question;
+    questions.append(item);
+  });
+  const disclaimer = document.createElement("p");
+  disclaimer.className = "field-help";
+  disclaimer.textContent = "These are general reflection prompts, not discoveries or conclusions about your topic.";
+  const actions = document.createElement("div");
+  actions.className = "review-controls draft-actions";
+  actions.append(
+    button("Save this starting workspace", "button button-primary", () => {
+      runAction(async () => {
+        const statements = draft.statements.map((text) => ({
+          id: crypto.randomUUID(),
+          text: text.slice(0, 2000),
+          source_label: "User-provided intake",
+          source_excerpt: text.slice(0, 2000),
+          status: "user_provided",
+          created_at: new Date().toISOString(),
+        }));
+        const nextModel = {
+          ...model,
+          title: model.title === "Untitled project" ? draft.title : model.title,
+          goal: model.goal ? model.goal : draft.goal,
+          statements: [...model.statements, ...statements],
+        };
+        model = await request("/api/model", { method: "PUT", body: JSON.stringify(nextModel) });
+        byId("intake-text").value = "";
+        preview.hidden = true;
+        preview.replaceChildren();
+        intakeDraft = null;
+        render();
+      }, "Your starting workspace has been saved locally. Review the preserved statements below.");
+    }),
+    button("Discard draft", "button button-small", () => {
+      preview.hidden = true;
+      preview.replaceChildren();
+      intakeDraft = null;
+    })
+  );
+  preview.append(heading, intro, titleLabel, title, goalLabel, goal, statementLabel, statementList,
+    questionsLabel, questions, disclaimer, actions);
+  preview.hidden = false;
+}
+
+byId("intake-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  const rawText = byId("intake-text").value;
+  if (!rawText.trim()) {
+    announce("Describe what you would like to explore first.", true);
+    byId("intake-text").focus();
+    return;
+  }
+  intakeDraft = makeIntakeDraft(rawText);
+  showIntakeDraft(intakeDraft);
+  announce("Draft prepared from your own words. Review it before saving.");
+});
+
 byId("import-file").addEventListener("change", async (event) => {
   const file = event.target.files?.[0];
   if (!file) return;
