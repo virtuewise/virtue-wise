@@ -92,14 +92,14 @@ Do not assume scheduling is active until the timer is enabled and a successful b
 
 For a Windows-first local installation, use Windows Task Scheduler under the same Windows account that owns the project data. The application does not install tasks automatically.
 
-1. Confirm the project has been run at least once and the database exists at `<repository>\\data\\virtue-wise.sqlite3`. Create the backup directory if desired. The default is `<repository>\\data\\backups`.
+1. Confirm the project has been run at least once and the database exists at `<repository>\data\virtue-wise.sqlite3`. Create the backup directory if desired. The default is `<repository>\data\backups`.
 2. Open **Task Scheduler** and choose **Create Task** (not Basic Task).
 3. On **General**, name it `VIRTUE WISE Daily Backup`, select the Windows account used for local development, and choose **Run only when user is logged on**. Do not select elevated privileges unless the chosen data paths genuinely require them.
 4. On **Triggers**, create a daily trigger at a suitable time (for example, 02:15).
 5. On **Actions**, choose **Start a program**:
-   - Program/script: `<repository>\\.venv\\Scripts\\python.exe`
+   - Program/script: `<repository>\.venv\Scripts\python.exe`
    - Add arguments: `-m app.backup create`
-   - Start in: `<repository>` (the directory containing `app\\` and `pyproject.toml`)
+   - Start in: `<repository>` (the directory containing `app\` and `pyproject.toml`)
 6. On **Settings**, enable **Run task as soon as possible after a scheduled start is missed**, and set **If the task is already running** to **Do not start a new instance**. Consider a reasonable execution time limit, such as 30 minutes.
 7. Save the task, right-click it, choose **Run**, and confirm a new verified snapshot appears in the configured backup directory. Inspect **Last Run Result** and **History** after the first run.
 
@@ -107,7 +107,7 @@ The task inherits the selected Windows account's filesystem permissions. Ensure 
 
 To check the latest recovery point, create a second Task Scheduler task named `VIRTUE WISE Backup Health Check` with a daily trigger later than the backup (for example, 03:00), the same account and **Start in** directory, and this action:
 
-- Program/script: `<repository>\\.venv\\Scripts\\python.exe`
+- Program/script: `<repository>\.venv\Scripts\python.exe`
 - Add arguments: `-m app.backup check --max-age-hours 26`
 - Start in: `<repository>`
 
