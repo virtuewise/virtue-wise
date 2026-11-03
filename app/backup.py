@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import argparse
+import math
 import os
 import sqlite3
 import sys
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from uuid import uuid4
 
@@ -155,6 +156,38 @@ def create_backup(keep: int | None = None, protect: tuple[Path, ...] = ()) -> Pa
             temporary.unlink()
 
 
+def check_latest_backup(
+    max_age_hours: float = 26.0, now: datetime | None = None
+) -> Path:
+    """Require the newest managed snapshot to be fresh and fully verifiable.
+
+    Uses filesystem modification time as the operational freshness signal.
+    A corrupt newest snapshot is an error; the check never silently falls back
+    to an older snapshot and hides a failed most-recent backup.
+    """
+    if not math.isfinite(max_age_hours) or max_age_hours <= 0:
+        raise ValueError("Maximum backup age must be a finite number greater than zero.")
+
+    snapshots = list(backup_directory().glob(f"{BACKUP_PREFIX}*.sqlite3"))
+    if not snapshots:
+        raise FileNotFoundError("No managed VIRTUE WISE backup snapshots were found.")
+    latest = max(snapshots, key=lambda item: (item.stat().st_mtime_ns, item.name))
+    modified_at = datetime.fromtimestamp(latest.stat().st_mtime, UTC)
+    current = datetime.now(UTC) if now is None else now
+    if current.tzinfo is None or current.utcoffset() is None:
+        raise ValueError("The backup check clock must be timezone-aware.")
+    age = current.astimezone(UTC) - modified_at
+    if age < timedelta(0):
+        raise ValueError("The newest backup timestamp is in the future; check the host clock.")
+    if age > timedelta(hours=max_age_hours):
+        raise ValueError(
+            f"The newest backup is stale ({age.total_seconds() / 3600:.1f} hours old; "
+            f"maximum is {max_age_hours:g} hours)."
+        )
+
+    return verify_backup(latest)
+
+
 def restore_backup(path: str | Path) -> tuple[Path, Path | None]:
     """Restore a verified snapshot; first preserve the current database if present.
 
@@ -211,6 +244,13 @@ def _parser() -> argparse.ArgumentParser:
     create.add_argument("--keep", type=int, default=None, help="number of snapshots to retain")
     verify = commands.add_parser("verify", help="verify a backup file")
     verify.add_argument("path", type=Path)
+    check = commands.add_parser(
+        "check", help="check that the newest managed backup is fresh and verified"
+    )
+    check.add_argument(
+        "--max-age-hours", type=float, default=26.0,
+        help="maximum allowed age of the newest backup (default: 26 hours)",
+    )
     prune = commands.add_parser("prune", help="remove snapshots beyond the retention count")
     prune.add_argument("--keep", type=int, default=None)
     restore = commands.add_parser("restore", help="restore a verified backup (stop the app first)")
@@ -229,6 +269,9 @@ def main() -> int:
             print(f"Verified backup created: {path}")
         elif args.command == "verify":
             print(f"Backup verified: {verify_backup(args.path)}")
+        elif args.command == "check":
+            path = check_latest_backup(args.max_age_hours)
+            print(f"Latest backup is fresh and verified: {path}")
         elif args.command == "prune":
             removed = prune_backups(args.keep if args.keep is not None else retention_count())
             print(f"Removed {len(removed)} expired backup(s).")
