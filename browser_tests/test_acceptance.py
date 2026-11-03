@@ -20,6 +20,8 @@ def test_core_workflow_and_responsive_layout():
         expect(page.locator("#notice")).to_contain_text("Ready.")
         expect(page.get_by_role("heading", name="Explore with an AI model")).to_be_visible()
         expect(page.locator("#local-ai-consent")).not_to_be_checked()
+        expect(page.locator("#ai-provider")).to_be_disabled()
+        expect(page.locator("#ai-model")).to_be_disabled()
         expect(page.get_by_role("button", name="Analyze with selected AI")).to_be_disabled()
 
         # Keyboard navigation starts at the brand link and exposes visible focus.
