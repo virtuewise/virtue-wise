@@ -381,9 +381,7 @@ def _opencode_headers() -> dict[str, str]:
     return {"Authorization": f"Basic {token}"}
 
 
-def _opencode_request(
-    path: str, payload: dict | None = None, *, method: str | None = None
-) -> dict:
+def _opencode_request(path: str, payload: dict | None = None, *, method: str | None = None) -> dict:
     return _request_provider_json(
         f"{_opencode_url()}{path}",
         payload,
