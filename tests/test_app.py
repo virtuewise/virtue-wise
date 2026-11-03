@@ -56,11 +56,15 @@ def test_storage_readiness_rejects_corrupt_sqlite_and_model_payload(tmp_path, mo
     client = TestClient(app, raise_server_exceptions=False)
     store.save_model(store.load_model())
 
-    with sqlite3.connect(database) as connection:
+    connection = sqlite3.connect(database)
+    try:
         connection.execute(
             "UPDATE project_model SET payload = ? WHERE singleton = 1",
             ("not valid JSON",),
         )
+        connection.commit()
+    finally:
+        connection.close()
     invalid_model = client.get("/ready")
     assert invalid_model.status_code == 503
     assert invalid_model.json() == {"detail": "Project storage is not ready."}
