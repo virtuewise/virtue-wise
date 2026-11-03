@@ -100,7 +100,6 @@ def test_backup_requires_existing_database(tmp_path, monkeypatch):
         backup.create_backup()
 
 
-
 def test_purge_removes_only_managed_snapshots(tmp_path, monkeypatch):
     configure_paths(tmp_path, monkeypatch)
     store.save_model(ProjectModel(title="Project with backups"))
