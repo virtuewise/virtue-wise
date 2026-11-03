@@ -184,6 +184,128 @@ def test_analysis_endpoint_returns_review_only_draft(tmp_path, monkeypatch):
     assert calls == [("Explore meeting delays.", "ollama", "qwen3:8b", "Saved local project")]
 
 
+def test_provider_self_test_requires_explicit_consent(monkeypatch):
+    called = []
+    monkeypatch.setattr(
+        analysis,
+        "create_analysis_draft",
+        lambda *args: called.append(args),
+    )
+
+    response = TestClient(app).post(
+        "/api/analysis/self-test",
+        json={"provider": "ollama", "model": "qwen3:8b", "consent": False},
+    )
+
+    assert response.status_code == 400
+    assert "fictional sample prompt" in response.json()["detail"]
+    assert called == []
+
+
+def test_provider_self_test_rejects_user_supplied_content_fields():
+    response = TestClient(app).post(
+        "/api/analysis/self-test",
+        json={
+            "provider": "ollama",
+            "model": "qwen3:8b",
+            "consent": True,
+            "text": "This private text must not be accepted by the smoke-test endpoint.",
+        },
+    )
+
+    assert response.status_code == 422
+
+
+def test_provider_self_test_uses_only_fictional_context(monkeypatch):
+    expected = analysis.AnalysisDraft(
+        summary="The sample provider returned a valid structured response.",
+        hypotheses=[
+            analysis.HypothesisSuggestion(
+                claim="The fictional team may need to reduce planned work."
+            )
+        ],
+    )
+    calls = []
+
+    def create_draft(text, provider, model_name, project):
+        calls.append((text, provider, model_name, project))
+        return expected
+
+    monkeypatch.setattr(analysis, "create_analysis_draft", create_draft)
+    monkeypatch.setattr(
+        store,
+        "load_model",
+        lambda: pytest.fail("A provider self-test must not load the saved workspace."),
+    )
+
+    response = TestClient(app).post(
+        "/api/analysis/self-test",
+        json={"provider": "ollama", "model": "qwen3:8b", "consent": True},
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "ok": True,
+        "provider": "ollama",
+        "model": "qwen3:8b",
+        "structured_response": True,
+        "hypothesis_count": 1,
+    }
+    assert len(calls) == 1
+    prompt, provider, model_name, project = calls[0]
+    assert "fictional sample data only" in prompt
+    assert "planned three tasks and completed two" in prompt
+    assert provider == "ollama"
+    assert model_name == "qwen3:8b"
+    assert project.title == "Provider connection test"
+    assert project.statements == []
+    assert project.hypotheses == []
+    assert project.scenarios == []
+
+
+def test_provider_self_test_rejects_empty_structured_response(monkeypatch):
+    monkeypatch.setattr(
+        analysis,
+        "create_analysis_draft",
+        lambda *_args: analysis.AnalysisDraft(),
+    )
+
+    response = TestClient(app).post(
+        "/api/analysis/self-test",
+        json={"provider": "ollama", "model": "qwen3:8b", "consent": True},
+    )
+
+    assert response.status_code == 502
+    detail = response.json()["detail"]
+    assert detail == "The provider returned an empty structured response."
+
+
+@pytest.mark.parametrize(
+    ("provider_error", "status_code"),
+    [
+        (analysis.AnalysisUnavailable("The provider rate limit was reached."), 503),
+        (analysis.AnalysisTimeout("The provider took too long."), 504),
+        (analysis.AnalysisInvalidResponse("The provider returned invalid JSON."), 502),
+    ],
+)
+def test_provider_self_test_reports_provider_failures(
+    monkeypatch,
+    provider_error,
+    status_code,
+):
+    def fail_analysis(*_args):
+        raise provider_error
+
+    monkeypatch.setattr(analysis, "create_analysis_draft", fail_analysis)
+    response = TestClient(app).post(
+        "/api/analysis/self-test",
+        json={"provider": "openrouter", "model": "free-model", "consent": True},
+    )
+
+    assert response.status_code == status_code
+    assert response.json()["detail"] == str(provider_error)
+
+
 def test_analysis_request_body_is_bounded(tmp_path, monkeypatch):
     monkeypatch.setenv("VIRTUE_WISE_DB", str(tmp_path / "analysis-size.sqlite3"))
     response = TestClient(app).post(

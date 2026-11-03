@@ -600,7 +600,11 @@ async function checkLocalAI() {
   const providerSelect = byId("ai-provider");
   const modelSelect = byId("ai-model");
   const run = byId("run-local-analysis");
+  const test = byId("test-ai-provider");
   check.disabled = true;
+  test.disabled = true;
+  byId("local-ai-consent").checked = false;
+  byId("ai-self-test-consent").checked = false;
   check.textContent = "Checking…";
   status.textContent = "Checking Ollama, OpenRouter, OpenCode and configured providers…";
   providerSelect.disabled = true;
@@ -643,7 +647,12 @@ function updateAIModelOptions() {
   const providerSelect = byId("ai-provider");
   const modelSelect = byId("ai-model");
   const run = byId("run-local-analysis");
+  const test = byId("test-ai-provider");
+  const testConsent = byId("ai-self-test-consent");
+  const analysisConsent = byId("local-ai-consent");
   const selected = providerSelect.value;
+  testConsent.checked = false;
+  analysisConsent.checked = false;
   let catalog = [];
   try { catalog = JSON.parse(providerSelect.dataset.catalog || "[]"); } catch { catalog = []; }
   const provider = catalog.find((item) => item.id === selected);
@@ -652,6 +661,7 @@ function updateAIModelOptions() {
     modelSelect.add(new Option("Select a provider first", ""));
     modelSelect.disabled = true;
     run.disabled = true;
+    test.disabled = true;
     return;
   }
   modelSelect.add(new Option("Choose a model", ""));
@@ -660,17 +670,60 @@ function updateAIModelOptions() {
   });
   modelSelect.disabled = false;
   byId("local-ai-status").textContent = `${provider.label}: ${provider.note || ""}`;
-  run.disabled = !(byId("local-ai-consent").checked && modelSelect.value);
+  run.disabled = true;
+  test.disabled = true;
 }
 
 byId("check-local-ai").addEventListener("click", checkLocalAI);
 byId("ai-provider").addEventListener("change", updateAIModelOptions);
 byId("ai-model").addEventListener("change", () => {
-  byId("run-local-analysis").disabled = !(byId("local-ai-consent").checked && byId("ai-model").value);
+  byId("local-ai-consent").checked = false;
+  byId("ai-self-test-consent").checked = false;
+  byId("run-local-analysis").disabled = true;
+  byId("test-ai-provider").disabled = true;
+});
+byId("ai-self-test-consent").addEventListener("change", () => {
+  byId("test-ai-provider").disabled = !(byId("ai-self-test-consent").checked && byId("ai-model").value);
 });
 byId("local-ai-consent").addEventListener("change", () => {
   byId("run-local-analysis").disabled = !(byId("local-ai-consent").checked && byId("ai-model").value);
 });
+byId("test-ai-provider").addEventListener("click", async () => {
+  const test = byId("test-ai-provider");
+  const testConsent = byId("ai-self-test-consent");
+  const run = byId("run-local-analysis");
+  const status = byId("local-ai-status");
+  const provider = byId("ai-provider").value;
+  const modelName = byId("ai-model").value;
+  if (!testConsent.checked) {
+    announce("Consent to the fictional provider test before starting it.", true);
+    return;
+  }
+  if (!provider || !modelName) return;
+  test.disabled = true;
+  run.disabled = true;
+  test.textContent = "Testing provider…";
+  status.textContent = `Sending a fictional sample to ${provider}. Your saved workspace is not included.`;
+  document.body.setAttribute("aria-busy", "true");
+  try {
+    const result = await request("/api/analysis/self-test", {
+      method: "POST",
+      body: JSON.stringify({ provider, model: modelName, consent: true }),
+    });
+    status.textContent = `Connection test succeeded for ${result.provider} / ${result.model}. A valid structured response was received; no saved workspace data was sent.`;
+    announce("Provider test succeeded. No saved workspace data was sent or changed.");
+  } catch (error) {
+    status.textContent = error.message || "Provider connection test failed.";
+    announce(status.textContent, true);
+  } finally {
+    testConsent.checked = false;
+    test.disabled = true;
+    test.textContent = "Test provider with fictional sample";
+    run.disabled = !(byId("local-ai-consent").checked && byId("ai-model").value);
+    document.body.removeAttribute("aria-busy");
+  }
+});
+
 byId("run-local-analysis").addEventListener("click", async () => {
   const run = byId("run-local-analysis");
   const consent = byId("local-ai-consent");

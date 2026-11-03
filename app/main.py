@@ -67,6 +67,13 @@ class AnalysisRequest(BaseModel):
     consent: bool = False
 
 
+class AnalysisSelfTestRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    provider: str = Field(min_length=1, max_length=40)
+    model: str = Field(min_length=1, max_length=200)
+    consent: bool = False
+
+
 class ScenarioInput(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
     name: str = Field(min_length=1, max_length=200)
@@ -442,6 +449,61 @@ def create_analysis_draft(request: AnalysisRequest) -> dict:
         return draft.model_dump(mode="json")
     except (store.StoreBusyError, sqlite3.Error, ValidationError, ValueError) as exc:
         raise HTTPException(status_code=503, detail="Project storage is not ready.") from exc
+    except analysis.AnalysisUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except analysis.AnalysisTimeout as exc:
+        raise HTTPException(status_code=504, detail=str(exc)) from exc
+    except analysis.AnalysisInvalidResponse as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    finally:
+        _ANALYSIS_LOCK.release()
+
+
+@app.post("/api/analysis/self-test")
+def run_analysis_self_test(request: AnalysisSelfTestRequest) -> dict:
+    """Verify a provider with fictional input and no saved workspace context."""
+    if not request.consent:
+        raise HTTPException(
+            status_code=400,
+            detail="Consent to send the fictional sample prompt before testing the provider.",
+        )
+    acquired = _ANALYSIS_LOCK.acquire(timeout=1)
+    if not acquired:
+        raise HTTPException(
+            status_code=503, detail="An AI analysis is already running. Retry shortly."
+        )
+    try:
+        sample_project = ProjectModel(
+            title="Provider connection test",
+            goal="Fictional smoke test only. No saved workspace data is included.",
+        )
+        sample_prompt = (
+            "This is a provider connection test using fictional sample data only. "
+            "A small team planned three tasks and completed two. Return a concise summary, "
+            "one tentative hypothesis, one counterpoint, and one follow-up question. "
+            "Do not cite sources or invent evidence."
+        )
+        draft = analysis.create_analysis_draft(
+            sample_prompt, request.provider, request.model, sample_project
+        )
+        if not (
+            draft.summary
+            or draft.hypotheses
+            or draft.missing_information
+            or draft.questions
+            or draft.experiments
+            or draft.scenarios
+        ):
+            raise analysis.AnalysisInvalidResponse(
+                "The provider returned an empty structured response."
+            )
+        return {
+            "ok": True,
+            "provider": request.provider,
+            "model": request.model,
+            "structured_response": True,
+            "hypothesis_count": len(draft.hypotheses),
+        }
     except analysis.AnalysisUnavailable as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except analysis.AnalysisTimeout as exc:
