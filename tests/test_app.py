@@ -718,7 +718,6 @@ def test_import_rejects_stale_revision_without_replacing_model(tmp_path, monkeyp
     assert saved["statements"][0]["text"] == "A newer saved statement"
 
 
-
 def test_delete_responses_return_the_resulting_model_etag(tmp_path, monkeypatch):
     client = test_client(tmp_path, monkeypatch)
 
