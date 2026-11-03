@@ -75,6 +75,15 @@ class AnalysisDraft(StrictModel):
     warnings: list[str] = Field(default_factory=list, max_length=20)
 
 
+def _unique_json_object(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("Duplicate JSON object key.")
+        result[key] = value
+    return result
+
+
 def _base_url() -> str:
     """Allow configuration only to an explicit loopback HTTP listener."""
     raw = os.environ.get("VIRTUE_WISE_OLLAMA_URL", "http://127.0.0.1:11434").strip()
@@ -85,7 +94,7 @@ def _base_url() -> str:
         raise AnalysisUnavailable("The local model URL is invalid.") from exc
     if (
         parsed.scheme != "http"
-        or parsed.hostname not in {"127.0.0.1", "localhost", "::1"}
+        or parsed.hostname != "127.0.0.1"
         or parsed.username is not None
         or parsed.password is not None
         or parsed.path not in {"", "/"}
@@ -235,8 +244,13 @@ def create_analysis_draft(user_text: str, model_name: str, project_model) -> Ana
     if not isinstance(content, str):
         raise AnalysisInvalidResponse("The local model did not return analysis content.")
     try:
-        draft = AnalysisDraft.model_validate_json(content)
-    except (ValidationError, ValueError) as exc:
+        parsed_content = json.loads(
+            content,
+            object_pairs_hook=_unique_json_object,
+            parse_constant=lambda value: (_ for _ in ()).throw(ValueError(value)),
+        )
+        draft = AnalysisDraft.model_validate(parsed_content)
+    except (ValidationError, ValueError, RecursionError) as exc:
         raise AnalysisInvalidResponse(
             "The local model response did not match the required analysis structure. Try again."
         ) from exc
