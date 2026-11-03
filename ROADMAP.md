@@ -48,7 +48,7 @@ This roadmap separates the **first local prototype** from the broader research v
 - [x] Keep hypotheses user-created; do not require an external model
 - [ ] Define deterministic suggestion rules and evaluate usefulness and false connections
 - [ ] Publish evaluation examples, limitations, and known failure modes
-- [x] Add optional free-first Ollama, OpenRouter, OpenCode, and OpenAI-compatible adapters with structured draft output and explicit user consent
+- [x] Add optional Ollama, OpenRouter free-model, OpenCode zero-reported-cost, and explicitly configured OpenAI-compatible adapters with structured draft output and explicit user consent
 - [x] Validate model output, remove unknown evidence references, and keep generated hypotheses/scenarios in review-only state
 - [ ] Evaluate suggestion quality, false positives, missed relationships, and usefulness against a documented baseline
 - [ ] Add evidence-backed research connectors with source citations and retrieval timestamps
