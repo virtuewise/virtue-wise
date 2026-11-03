@@ -15,7 +15,7 @@
 
 Use `python -m app.backup create` to make a consistent SQLite snapshot, verify its integrity and model payload, and prune older snapshots. The default retention is 30 snapshots. Set `VIRTUE_WISE_BACKUP_DIR` to a directory on a separate volume and `VIRTUE_WISE_BACKUP_RETENTION_COUNT` to change the policy. See [backup operations](BACKUP_OPERATIONS.md) for configuration and the sample daily systemd timer.
 
-The application does not start its own scheduler. Automated daily backups only occur after the operator installs and enables the supplied systemd timer (or configures an equivalent OS scheduler). Verify timer execution and run `python -m app.backup verify PATH` before relying on a snapshot. The tool restricts backup file permissions but does not encrypt backups; use OS-level disk encryption and a separate protected copy. Keep JSON export as a portable secondary recovery option.
+The application does not start its own scheduler. Automated daily backups only occur after the operator installs and enables the supplied systemd timer (or configures an equivalent OS scheduler). Verify timer execution and run `python -m app.backup verify PATH` before relying on a snapshot. The tool restricts backup file permissions but does not encrypt backups; use OS-level disk encryption and a separate protected copy. After a project deletion, use `python -m app.backup purge --yes` only when all local restore points should also be destroyed; this does not remove off-device copies. Keep JSON export as a portable secondary recovery option.
 
 ## Recovery and restore procedure
 

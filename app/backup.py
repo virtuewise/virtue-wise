@@ -162,6 +162,17 @@ def restore_backup(path: str | Path) -> tuple[Path, Path | None]:
     return target_path, pre_restore
 
 
+def purge_backups() -> list[Path]:
+    """Delete all managed local snapshots, leaving unrelated files untouched."""
+    directory = backup_directory()
+    if not directory.exists():
+        return []
+    removed = sorted(directory.glob(f"{BACKUP_PREFIX}*.sqlite3"))
+    for path in removed:
+        path.unlink()
+    return removed
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="VIRTUE WISE local SQLite backup tools")
     commands = parser.add_subparsers(dest="command", required=True)
@@ -174,6 +185,8 @@ def _parser() -> argparse.ArgumentParser:
     restore = commands.add_parser("restore", help="restore a verified backup (stop the app first)")
     restore.add_argument("path", type=Path)
     restore.add_argument("--yes", action="store_true", help="confirm the destructive restore")
+    purge = commands.add_parser("purge", help="delete all managed local backup snapshots")
+    purge.add_argument("--yes", action="store_true", help="confirm irreversible snapshot deletion")
     return parser
 
 
@@ -195,6 +208,11 @@ def main() -> int:
             print(f"Restored database: {target}")
             if pre_restore is not None:
                 print(f"Pre-restore database backup: {pre_restore}")
+        elif args.command == "purge":
+            if not args.yes:
+                raise ValueError("Purging backups requires --yes.")
+            removed = purge_backups()
+            print(f"Deleted {len(removed)} managed backup snapshot(s).")
         return 0
     except (OSError, sqlite3.Error, ValueError) as exc:
         print(f"Backup operation failed: {exc}", file=sys.stderr)

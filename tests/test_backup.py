@@ -1,6 +1,7 @@
 """Tests for verified SQLite backups and safe restore behavior."""
 
 import sqlite3
+import sys
 
 import pytest
 
@@ -97,3 +98,37 @@ def test_backup_requires_existing_database(tmp_path, monkeypatch):
     configure_paths(tmp_path, monkeypatch)
     with pytest.raises(FileNotFoundError):
         backup.create_backup()
+
+
+def test_purge_removes_only_managed_snapshots(tmp_path, monkeypatch):
+    configure_paths(tmp_path, monkeypatch)
+    store.save_model(ProjectModel(title="Project with backups"))
+    snapshot = backup.create_backup()
+    unrelated = backup.backup_directory() / "manual-export.sqlite3"
+    unrelated.write_bytes(b"keep this file")
+
+    removed = backup.purge_backups()
+
+    assert removed == [snapshot]
+    assert not snapshot.exists()
+    assert unrelated.exists()
+
+
+def test_purge_cli_requires_confirmation(tmp_path, monkeypatch):
+    configure_paths(tmp_path, monkeypatch)
+    store.save_model(ProjectModel(title="Project with backup"))
+    snapshot = backup.create_backup()
+    monkeypatch.setattr(sys, "argv", ["app.backup", "purge"])
+
+    assert backup.main() == 1
+    assert snapshot.exists()
+
+
+def test_purge_cli_deletes_managed_snapshots_after_confirmation(tmp_path, monkeypatch):
+    configure_paths(tmp_path, monkeypatch)
+    store.save_model(ProjectModel(title="Project with backup"))
+    snapshot = backup.create_backup()
+    monkeypatch.setattr(sys, "argv", ["app.backup", "purge", "--yes"])
+
+    assert backup.main() == 0
+    assert not snapshot.exists()
