@@ -164,6 +164,7 @@ def test_analysis_endpoint_returns_review_only_draft(tmp_path, monkeypatch):
     assert response.json()["hypotheses"][0]["claim"] == expected.hypotheses[0].claim
     assert calls == [("Explore meeting delays.", "qwen3:8b", "Saved local project")]
 
+
 def test_analysis_request_body_is_bounded(tmp_path, monkeypatch):
     monkeypatch.setenv("VIRTUE_WISE_DB", str(tmp_path / "analysis-size.sqlite3"))
     response = TestClient(app).post(
