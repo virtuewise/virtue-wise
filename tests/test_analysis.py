@@ -195,7 +195,6 @@ def test_analysis_request_body_is_bounded(tmp_path, monkeypatch):
     assert response.status_code == 413
 
 
-
 def test_openrouter_catalog_only_lists_zero_price_models(monkeypatch):
     monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
     monkeypatch.setattr(analysis, "list_models", lambda: [])
