@@ -69,6 +69,7 @@ def test_analysis_uses_structured_local_output_and_filters_unknown_evidence(monk
                 "limitations": "Other meeting conditions may change at the same time.",
             }
         ],
+        "warnings": ["The model claims every suggestion is verified."],
         "scenarios": [
             {
                 "name": "Use a time-boxed agenda",
@@ -89,6 +90,7 @@ def test_analysis_uses_structured_local_output_and_filters_unknown_evidence(monk
 
     assert result.hypotheses[0].evidence_statement_ids == [statement.id]
     assert any("unrecognized evidence reference" in warning for warning in result.warnings)
+    assert not any("verified" in warning for warning in result.warnings)
     assert result.experiments[0].question == "Would a time-boxed agenda reduce overruns?"
     chat_request = json.loads(opener.requests[1][0].data)
     assert chat_request["stream"] is False
