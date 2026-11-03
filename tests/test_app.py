@@ -713,9 +713,12 @@ def test_database_survives_independent_application_process_restart(tmp_path, mon
     # TestClient or a reused SQLite connection.
     environment = os.environ.copy()
     environment["VIRTUE_WISE_DB"] = str(database)
-    command = (
-        "from app import store; store.check_database(); "
-        "print(store.load_model().model_dump_json())"
+    command = "; ".join(
+        (
+            "from app import store",
+            "store.check_database()",
+            "print(store.load_model().model_dump_json())",
+        )
     )
     completed = subprocess.run(
         [sys.executable, "-c", command],
@@ -742,11 +745,15 @@ def test_independent_process_writes_do_not_lose_updates(tmp_path, monkeypatch):
     environment = os.environ.copy()
     environment["VIRTUE_WISE_DB"] = str(database)
     root = Path(__file__).resolve().parents[1]
-    command = (
-        "import sys; from app import store; from app.models import Statement; "
-        "index = sys.argv[1]; "
-        "store.mutate_model(lambda model: model.statements.append("
-        "Statement(text='Independent process ' + index)))"
+    command = "; ".join(
+        (
+            "import sys",
+            "from app import store",
+            "from app.models import Statement",
+            "index = sys.argv[1]",
+            "store.mutate_model(lambda model: model.statements.append("
+            "Statement(text='Independent process ' + index)))",
+        )
     )
 
     def write_from_process(index):
