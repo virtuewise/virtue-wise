@@ -273,7 +273,7 @@ def create_analysis_draft(user_text: str, model_name: str, project_model) -> Ana
         valid_links = [item for item in hypothesis.evidence_statement_ids if item in valid_ids]
         if len(valid_links) != len(hypothesis.evidence_statement_ids):
             warnings.append(
-                "The model proposed an evidence reference that does not exist; it was removed."
+                "The model returned an unrecognized evidence reference; it was removed."
             )
         cleaned_hypotheses.append(
             hypothesis.model_copy(update={"evidence_statement_ids": valid_links})
