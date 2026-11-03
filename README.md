@@ -99,6 +99,7 @@ Contributions are welcome across engineering, research, product design, accessib
 | [Prototype plan](docs/PROTOTYPE.md) | Scope, technical choices, acceptance criteria |
 | [Architecture](docs/ARCHITECTURE.md) | Implementation, boundaries, and known limitations |
 | [Acceptance walkthrough](docs/ACCEPTANCE.md) | Manual workflow and accessibility checklist |
+| [Live AI provider acceptance](docs/AI_PROVIDER_ACCEPTANCE.md) | Provider smoke tests, real-service checks, and failure recovery |
 | [Model evaluation protocol](docs/MODEL_EVALUATION.md) | Evidence-based criteria for deciding whether to expand the data model |
 | [Brand guide](docs/BRAND.md) | Visual identity and documentation standards |
 | [Roadmap](ROADMAP.md) | Proposed milestones |
