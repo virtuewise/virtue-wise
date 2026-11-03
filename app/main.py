@@ -427,7 +427,8 @@ def delete_statement(statement_id: str, response: Response) -> Response:
         model.statements = [item for item in model.statements if item.id != statement_id]
 
     mutate_validated_model(mutate, response)
-    return Response(status_code=204)
+    response.status_code = 204
+    return response
 
 
 @app.post("/api/hypotheses", response_model=ProjectModel, status_code=201)
@@ -536,7 +537,8 @@ def delete_scenario(scenario_id: str, response: Response) -> Response:
         model.scenarios = [item for item in model.scenarios if item.id != scenario_id]
 
     mutate_validated_model(mutate, response)
-    return Response(status_code=204)
+    response.status_code = 204
+    return response
 
 
 @app.get("/api/export")
@@ -549,8 +551,9 @@ def export_model() -> JSONResponse:
 
 
 @app.delete("/api/model", status_code=204)
-def remove_model() -> None:
+def remove_model(response: Response) -> None:
     try:
         store.delete_model()
+        response.headers["ETag"] = '"empty"'
     except store.StoreBusyError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
