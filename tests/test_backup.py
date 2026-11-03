@@ -144,3 +144,14 @@ def test_new_backup_directory_is_private(tmp_path, monkeypatch):
     backup.create_backup()
 
     assert stat.S_IMODE(backups.stat().st_mode) == 0o700
+
+
+@pytest.mark.skipif(os.name != "posix", reason="POSIX mode bits are not portable to Windows ACLs")
+def test_sqlite_staging_file_is_private_and_created_exclusively(tmp_path):
+    staging = tmp_path / "staging.sqlite3"
+
+    backup._create_private_sqlite_file(staging)
+
+    assert stat.S_IMODE(staging.stat().st_mode) == 0o600
+    with pytest.raises(FileExistsError):
+        backup._create_private_sqlite_file(staging)
