@@ -8,6 +8,7 @@ VIRTUE WISE is a local FastAPI application serving a static HTML/CSS/JavaScript 
 - `app/store.py` owns SQLite persistence.
 - `app/backup.py` creates, verifies, prunes, and restores local SQLite snapshots; `deploy/systemd/` contains a sample daily backup timer.
 - `app/main.py` exposes the interface, health endpoint, model API, record editing, hypothesis review, scenario operations, JSON import/export, and deletion; it also applies browser-origin checks and a loopback Host allowlist.
+  All `/api/` responses use `Cache-Control: no-store` because they may contain complete project content; this is not an authentication or authorization control.
 - `app/static/` contains the browser interface and interaction logic.
 - `tests/` exercises API behavior, provenance rules, scenario operations, import validation, and the documented demo fixture.
 - `examples/demo-project.json` provides a fictional model for local exploration and acceptance testing.
