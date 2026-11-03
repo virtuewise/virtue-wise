@@ -195,7 +195,8 @@ def test_json_import_validates_before_replacing_model(tmp_path, monkeypatch):
     put_with_revision(
         client,
         "/api/model", json={"title": "Keep this model"})
-    invalid = put_with_revision(client, "/api/import",
+    invalid = put_with_revision(
+        client, "/api/import",
         files={"upload": ("invalid.json", b'{"schema_version": 99}', "application/json")},
     )
     assert invalid.status_code == 422
@@ -214,7 +215,8 @@ def test_json_import_validates_before_replacing_model(tmp_path, monkeypatch):
         ],
         "scenarios": [{"id": "scenario-1", "name": "Option A"}],
     }
-    imported = put_with_revision(client, "/api/import",
+    imported = put_with_revision(
+        client, "/api/import",
         files={"upload": ("model.json", json.dumps(payload), "application/json")},
     )
     assert imported.status_code == 200
@@ -226,7 +228,8 @@ def test_documented_demo_model_imports_and_preserves_links(tmp_path, monkeypatch
     client = test_client(tmp_path, monkeypatch)
     example_path = Path(__file__).resolve().parents[1] / "examples" / "demo-project.json"
     with example_path.open("rb") as example:
-        imported = put_with_revision(client, "/api/import",
+        imported = put_with_revision(
+            client, "/api/import",
             files={"upload": ("demo-project.json", example, "application/json")},
         )
     assert imported.status_code == 200
@@ -245,11 +248,13 @@ def test_import_rejects_dangling_evidence_and_oversized_upload(tmp_path, monkeyp
         "schema_version": 1,
         "hypotheses": [{"claim": "Broken link", "evidence_statement_ids": ["absent"]}],
     }
-    invalid = put_with_revision(client, "/api/import",
+    invalid = put_with_revision(
+        client, "/api/import",
         files={"upload": ("model.json", json.dumps(payload), "application/json")},
     )
     assert invalid.status_code == 422
-    oversized = put_with_revision(client, "/api/import",
+    oversized = put_with_revision(
+        client, "/api/import",
         files={"upload": ("large.json", b" " * 2_000_001, "application/json")},
     )
     assert oversized.status_code == 413
@@ -319,7 +324,9 @@ def test_duplicate_evidence_links_are_rejected_on_update_and_import(tmp_path, mo
     assert invalid_update.status_code == 422
     assert client.get("/api/model").json()["hypotheses"][0]["evidence_statement_ids"] == []
 
-    invalid_import = put_with_revision(client, "/api/import",
+    invalid_import = put_with_revision(
+
+        client, "/api/import",
         files={
             "upload": (
                 "duplicate-evidence.json",
@@ -380,7 +387,8 @@ def test_security_headers_are_present_on_application_responses(tmp_path, monkeyp
 
 def test_state_changing_request_rejects_cross_origin_origin_header(tmp_path, monkeypatch):
     client = test_client(tmp_path, monkeypatch)
-    response = put_with_revision(client, "/api/model",
+    response = put_with_revision(
+        client, "/api/model",
         json={"title": "Should not be saved"},
         headers={"Origin": "https://attacker.example"},
     )
@@ -390,7 +398,8 @@ def test_state_changing_request_rejects_cross_origin_origin_header(tmp_path, mon
 
 def test_state_changing_request_accepts_matching_origin(tmp_path, monkeypatch):
     client = test_client(tmp_path, monkeypatch)
-    response = put_with_revision(client, "/api/model",
+    response = put_with_revision(
+        client, "/api/model",
         json={"title": "Same-origin update"},
         headers={"Origin": "http://testserver"},
     )
@@ -410,7 +419,8 @@ def test_state_changing_request_rejects_cross_site_fetch_metadata(tmp_path, monk
 
 def test_state_changing_request_rejects_cross_origin_referer(tmp_path, monkeypatch):
     client = test_client(tmp_path, monkeypatch)
-    response = put_with_revision(client, "/api/model",
+    response = put_with_revision(
+        client, "/api/model",
         json={"title": "Should not be saved"},
         headers={"Referer": "https://attacker.example/form"},
     )
@@ -437,7 +447,8 @@ def test_import_rejects_invalid_utf8_and_malformed_json_without_replacing_model(
         b"[" * 3000,
     ]
     for payload in invalid_payloads:
-        response = put_with_revision(client, "/api/import",
+        response = put_with_revision(
+            client, "/api/import",
             files={"upload": ("invalid.json", payload, "application/json")},
         )
         assert response.status_code == 422
@@ -455,7 +466,8 @@ def test_import_rejects_duplicate_keys_and_nonstandard_json_numbers(tmp_path, mo
         b'{"schema_version": 1, "goal": NaN}',
     ]
     for payload in invalid_payloads:
-        response = put_with_revision(client, "/api/import",
+        response = put_with_revision(
+            client, "/api/import",
             files={"upload": ("ambiguous.json", payload, "application/json")},
         )
         assert response.status_code == 422
@@ -464,7 +476,8 @@ def test_import_rejects_duplicate_keys_and_nonstandard_json_numbers(tmp_path, mo
 
 def test_declared_oversized_import_request_is_rejected_before_parsing(tmp_path, monkeypatch):
     client = test_client(tmp_path, monkeypatch)
-    response = put_with_revision(client, "/api/import",
+    response = put_with_revision(
+        client, "/api/import",
         content=b"not a multipart body",
         headers={"Content-Length": "2100001", "Content-Type": "multipart/form-data"},
     )
@@ -514,7 +527,9 @@ def test_json_export_can_restore_a_deleted_model(tmp_path, monkeypatch):
         assert client.delete("/api/model").status_code == 204
         assert client.get("/api/model").json()["statements"] == []
 
-        restored = put_with_revision(client, "/api/import",
+        restored = put_with_revision(
+
+            client, "/api/import",
             files={"upload": ("backup.json", backup, "application/json")},
         )
         assert restored.status_code == 200
@@ -563,7 +578,8 @@ def test_chunked_import_request_without_content_length_is_bounded(tmp_path, monk
         + f"\r\n--{boundary}--\r\n".encode()
     )
     chunks = (body[index : index + 65536] for index in range(0, len(body), 65536))
-    response = put_with_revision(client, "/api/import",
+    response = put_with_revision(
+        client, "/api/import",
         content=chunks,
         headers={
             "Content-Type": f"multipart/form-data; boundary={boundary}",
@@ -628,7 +644,8 @@ def test_import_body_timeout_returns_408_without_replacing_model(tmp_path, monke
         return await original_receive(request)
 
     monkeypatch.setattr(Request, "receive", slow_receive)
-    response = put_with_revision(client, "/api/import",
+    response = put_with_revision(
+        client, "/api/import",
         files={"upload": ("backup.json", b'{"schema_version": 1}', "application/json")},
     )
     assert response.status_code == 408
@@ -639,7 +656,8 @@ def test_import_capacity_limit_returns_503(tmp_path, monkeypatch):
     client = test_client(tmp_path, monkeypatch)
     monkeypatch.setattr("app.main.IMPORT_SLOT_WAIT_SECONDS", 0.01)
     monkeypatch.setattr("app.main._IMPORT_LOCK", threading.BoundedSemaphore(0))
-    response = put_with_revision(client, "/api/import",
+    response = put_with_revision(
+        client, "/api/import",
         files={"upload": ("backup.json", b'{"schema_version": 1}', "application/json")},
     )
     assert response.status_code == 503
@@ -652,7 +670,11 @@ def test_full_model_replacement_requires_current_revision(tmp_path, monkeypatch)
     initial = client.get("/api/model")
     assert initial.headers["etag"] == '"empty"'
 
-    saved = put_with_revision(client, "/api/model", json={"title": "Current project"})
+    saved = put_with_revision(
+
+        client, "/api/model", json={"title": "Current project"}
+
+    )
     assert saved.status_code == 200
     current = client.get("/api/model")
     assert current.headers["etag"] == f'"{saved.json()["updated_at"]}"'
