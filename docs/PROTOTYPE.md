@@ -43,7 +43,7 @@ A hypothesis must never silently become a verified fact after acceptance. The re
 
 ## Inference policy
 
-The conversational intake currently performs deterministic text organization only. It does not use a language model, browse sources, verify claims, independently generate hypotheses, or discover unknown unknowns. Reflection questions are generic prompts and must not be represented as insights. The prototype uses user-created hypotheses and does not require an external language model. Qualitative labels—unknown, tentative, and supported—are not calibrated probabilities. Scenario comparison is descriptive and does not claim causal discovery or reliable prediction.
+The conversational intake performs deterministic text organization and generic reflection prompts. An optional Ollama adapter can run a local model on the same computer after explicit user consent. It generates review-only hypotheses, counterpoints, missing-information prompts, questions, experiments, and scenarios. The adapter does not browse sources, verify claims, establish novelty, or discover unknown unknowns. Model output is untrusted, schema-validated, and never automatically accepted or treated as fact. No hosted AI provider is integrated. Qualitative labels—unknown, tentative, and supported—are not calibrated probabilities. Scenario comparison is descriptive and does not claim causal discovery or reliable prediction.
 
 ## Privacy and safety boundaries
 
@@ -59,6 +59,7 @@ The conversational intake currently performs deterministic text organization onl
 
 - [x] Create and edit the project through the interface.
 - [ ] Complete browser acceptance for the conversational intake: preview, discard, save, preserve existing model data, and reload persistence.
+- [ ] Manually verify the optional Ollama flow with a local model: status check, explicit consent, generated draft, evidence-reference filtering, add-as-proposed hypothesis, save-as-scenario, and no network calls to external AI services.
 - [x] Keep statements separate from hypotheses.
 - [x] Trace hypotheses to evidence or mark them as lacking evidence.
 - [x] Accept, revise, or reject a hypothesis without rewriting source statements.
