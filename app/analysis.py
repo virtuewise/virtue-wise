@@ -3,11 +3,10 @@
 import json
 import os
 import re
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
-
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 
 MAX_RESPONSE_BYTES = 1_000_000
