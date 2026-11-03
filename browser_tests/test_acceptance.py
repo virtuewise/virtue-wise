@@ -18,9 +18,9 @@ def test_core_workflow_and_responsive_layout():
         page.on("dialog", lambda dialog: dialog.accept())
         page.goto(BASE_URL, wait_until="networkidle")
         expect(page.locator("#notice")).to_contain_text("Ready.")
-        expect(page.get_by_role("heading", name="Explore this with your local AI")).to_be_visible()
+        expect(page.get_by_role("heading", name="Explore with an AI model")).to_be_visible()
         expect(page.locator("#local-ai-consent")).not_to_be_checked()
-        expect(page.get_by_role("button", name="Analyze with local AI")).to_be_disabled()
+        expect(page.get_by_role("button", name="Analyze with selected AI")).to_be_disabled()
 
         # Keyboard navigation starts at the brand link and exposes visible focus.
         page.keyboard.press("Tab")
