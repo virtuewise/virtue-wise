@@ -42,9 +42,7 @@ def load_model() -> ProjectModel:
     """Load the saved model or return an empty model on first run."""
     connection = _connect()
     try:
-        row = connection.execute(
-            "SELECT payload FROM project_model WHERE singleton = 1"
-        ).fetchone()
+        row = connection.execute("SELECT payload FROM project_model WHERE singleton = 1").fetchone()
     finally:
         connection.close()
     if row is None:
