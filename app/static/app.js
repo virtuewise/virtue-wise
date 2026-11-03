@@ -603,6 +603,8 @@ async function checkLocalAI() {
   const test = byId("test-ai-provider");
   check.disabled = true;
   test.disabled = true;
+  byId("local-ai-consent").checked = false;
+  byId("ai-self-test-consent").checked = false;
   check.textContent = "Checking…";
   status.textContent = "Checking Ollama, OpenRouter, OpenCode and configured providers…";
   providerSelect.disabled = true;
@@ -647,7 +649,10 @@ function updateAIModelOptions() {
   const run = byId("run-local-analysis");
   const test = byId("test-ai-provider");
   const testConsent = byId("ai-self-test-consent");
+  const analysisConsent = byId("local-ai-consent");
   const selected = providerSelect.value;
+  testConsent.checked = false;
+  analysisConsent.checked = false;
   let catalog = [];
   try { catalog = JSON.parse(providerSelect.dataset.catalog || "[]"); } catch { catalog = []; }
   const provider = catalog.find((item) => item.id === selected);
@@ -665,15 +670,17 @@ function updateAIModelOptions() {
   });
   modelSelect.disabled = false;
   byId("local-ai-status").textContent = `${provider.label}: ${provider.note || ""}`;
-  run.disabled = !(byId("local-ai-consent").checked && modelSelect.value);
-  test.disabled = !(testConsent.checked && modelSelect.value);
+  run.disabled = true;
+  test.disabled = true;
 }
 
 byId("check-local-ai").addEventListener("click", checkLocalAI);
 byId("ai-provider").addEventListener("change", updateAIModelOptions);
 byId("ai-model").addEventListener("change", () => {
-  byId("run-local-analysis").disabled = !(byId("local-ai-consent").checked && byId("ai-model").value);
-  byId("test-ai-provider").disabled = !(byId("ai-self-test-consent").checked && byId("ai-model").value);
+  byId("local-ai-consent").checked = false;
+  byId("ai-self-test-consent").checked = false;
+  byId("run-local-analysis").disabled = true;
+  byId("test-ai-provider").disabled = true;
 });
 byId("ai-self-test-consent").addEventListener("change", () => {
   byId("test-ai-provider").disabled = !(byId("ai-self-test-consent").checked && byId("ai-model").value);
